@@ -5,7 +5,8 @@ const userSchema = mongoose.Schema({
 	elo: {
 		type: Map,
 		of: Number
-	}
+	},
+	matchHistory: [{type: String}]
 })
 
 const User = mongoose.model("User", userSchema)

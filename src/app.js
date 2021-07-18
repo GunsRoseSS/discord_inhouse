@@ -13,16 +13,21 @@ const PREFIX = "!"
 import disbut, {MessageButton} from "discord-buttons"
 disbut(client)
 
-import {createUser, getUser,getUsers, addElo, deleteUsers} from "./interface/user.js"
+import {createUser, getUser, getUsers, addElo, deleteUsers, getUserMatchHistory} from "./interface/user.js"
 import {addToQueue, getQueue, clearQueue, playersInQueue, playersInRole} from "./interface/queue.js"
 
 import {getMatchups} from "./interface/matchup.js"
 
 import {formatRoles, formatUsers} from "./helpers/format.js"
+import {convertMatchHistoryToEmbed} from "./interface/games.js";
 
 const admins = ["278604461436567552"]
 
 client.on("ready",() => {
+	// client.channels.fetch("863014796915638296").then(channel => {
+	// 	channel.send("Discord bot restarted and online!")
+	// })
+	console.log('Loaded!')
 })
 
 //Takes a list of matchups
@@ -169,6 +174,22 @@ client.on("message", async (message) => {
 
 
 				break
+			case 'history':
+				message.react('📖')
+
+				const historyEmbed = new MessageEmbed()
+					.setTitle("History")
+					.setDescription(await convertMatchHistoryToEmbed(await getUserMatchHistory(message.author.id)))
+					.addField('How to view Match History',
+						'In order to view your match, click on the link below and log in. Then,' +
+						'click on any of your matches and replace the FIRST set of numbers with your match ID.')
+					.addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/')
+
+				message.channel.send(historyEmbed)
+				break
+			case 'epic':
+				message.channel.send('epic')
+				break
 		}
 	}
 
@@ -181,3 +202,4 @@ mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin
 /*mongoose.connect(`${process.env.db_host}/${process.env.db_name}?authSource=admin`,{user: process.env.db_user, pass: process.env.db_pass, useNewUrlParser: true,useUnifiedTopology: true}).then(() => {
 	client.login(process.env.BOT_TOKEN)
 })*/
+
