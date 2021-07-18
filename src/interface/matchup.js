@@ -1,16 +1,31 @@
 import Matchup from "../models/matchup.js"
 
-export const processMatchups = async (role, players) => {
-	for (var i=0;i<players.length;i++) {
-		for (var j=i+1;j<players.length;j++) {
-			var matchup = await Matchup.findOne({role: role, $or : [{player1: players[i], player2: players[j]}, {player1: players[j], player2: players[i]}]})
+//Takes a role and an array of player id's
+//Gets/Creates a matchup for each posible permutation
+//Chance = expected % chance that player1 wins
+export const getMatchups = async (role, players) => {
+	let out = []
 
-			if (!matchup) {
-				matchup = new Matchup({player1: players[i], player2: players[j], role: role, chance: 50})
-
-				await matchup.save()
-			}
+	for (let i=0;i<players.length;i++) {
+		//j=0 = normal + inversed, j=i+1 = normal
+		for (let j=0;j<players.length;j++) {
+			if (i != j) {
+				let matchup = await Matchup.findOne({role: role, player1: players[i], player2: players[j]}, "-_id -role -__v")
+	
+				if (!matchup) {
+					//TODO: Add calculation for expected outcome
+					matchup = new Matchup({player1: players[i], player2: players[j], role: role, chance: 50.0})
+	
+					await matchup.save()
+	
+					matchup = {player1: matchup.player1, player2: matchup.player2, chance: matchup.chance}
+				}
+	
+				out.push(matchup)
+			}		
 		}
 	}
+
+	return out
 }
 
