@@ -46,11 +46,15 @@ export const addElo = async (id, role, amount) => {
 }
 
 export const getUsers = async(id) => {
-	const users = await User.find()
-
-	return users
+	return User.find();
 }
 
 export const deleteUsers = async() => {
 	await User.deleteMany()
+}
+
+export const getUserMatchHistory = async(id) => {
+	const user = await getUser(id);
+
+	return user.matchHistory
 }
