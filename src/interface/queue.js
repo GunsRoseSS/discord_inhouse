@@ -1,4 +1,3 @@
-import mongoose from "mongoose"
 import Queue from "../models/queue.js"
 
 export const addToQueue = async (id, roles) => {
