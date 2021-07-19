@@ -15,9 +15,15 @@ import {addToQueue, clearQueue, playersInQueue} from "./interface/queue.js"
 import { findMatch } from "./interface/matchmaking.js"
 
 import {formatRoles, formatUsers} from "./helpers/format.js"
-import {convertMatchHistoryToEmbed, createGame, getMatchHistoryData} from "./interface/games.js";
+import { getRoleEmoji } from "./helpers/emoji.js"
 
 const admins = ["278604461436567552"]
+
+let current_game = null
+let game_message = null
+let player_states = {}
+let result = "win"
+let result_confirm = []
 
 client.on("ready",() => {
 	// client.channels.fetch("863014796915638296").then(channel => {
@@ -25,6 +31,58 @@ client.on("ready",() => {
 	// })
 	console.log('Loaded!')
 })
+
+const updateGameCard = async () => {
+	if (game_message) {
+		let game_embed = new MessageEmbed()
+		.setTitle("Game found")
+		.setDescription(`Expected outcome: ${(current_game.expected_outcome  * 100.0000).toFixed(2)}% ${(current_game.expected_outcome >= 0.5000) ? "BLUE" :"RED"} \n
+		Average matchup deviation: ${(current_game.avg_matchup_deviation * 100.0000).toFixed(2)}% \n\n`)
+		.setFooter("\u2800".repeat(50))
+		.setTimestamp()
+
+		let msg_blue_side = ""
+		let msg_red_side = ""
+		let msg_outcome = ""
+
+		let x = 0
+
+		let msg_ping = ""
+
+		for (const matchup of current_game.game) {	
+			let p1_name = matchup.player1
+			let p2_name = matchup.player2
+			try {
+				p1_name = await client.users.fetch(matchup.player1)
+				msg_ping += `${p1_name}`
+				p2_name = await client.users.fetch(matchup.player2)
+				msg_ping += `${p2_name}`
+			} catch(error) {}
+
+			msg_blue_side += `${getRoleEmoji(x)} \u2800 ${player_states[matchup.player1]} ${p1_name} \u2800 \n`
+			msg_red_side += `${getRoleEmoji(x)} \u2800 ${player_states[matchup.player2]} ${p2_name} \u2800 \n`
+			msg_outcome += `${(matchup.probability * 100.0000).toFixed(2)}% \n`
+			x++
+		}
+
+
+		game_embed.addField("BLUE", msg_blue_side, true)
+		game_embed.addField("RED", msg_red_side, true)
+		game_embed.addField("OUTCOME", msg_outcome, true)
+
+		let btn_accept = new MessageButton()
+		.setLabel("Accept")
+		.setID("accept_game")
+		.setStyle("green")
+
+		let btn_decline = new MessageButton()
+		.setLabel("Decline")
+		.setID("decline_game")
+		.setStyle("red")
+
+		game_message.edit(`||${msg_ping}||`, {buttons: [btn_accept, btn_decline], embed: game_embed})
+	}
+}
 
 client.on("message", async (message) => {
 	if (message.author.bot) return
@@ -65,21 +123,77 @@ client.on("message", async (message) => {
 				break
 			case "start":
 				let queue = await playersInQueue()
-				const count = queue.length
+				let count = queue.length
+
 				if (count < 10) {
 					message.channel.send(`Not enough players in queue, need ${10 - count} more`)
 					return
 				}
-				let match = await findMatch()
 
-				message.channel.send("Game found")
+				current_game = await findMatch()
 
 				/*
 					TODO: 
 
 					- Display match to users (need to convert discord_id to username?)
 					- Save match globally
+					- Clear queue
 				*/
+
+				console.log(current_game)
+
+				let game_embed = new MessageEmbed()
+				.setTitle("Game found")
+				.setDescription(`Expected outcome: ${(current_game.expected_outcome  * 100.0000).toFixed(2)}% ${(current_game.expected_outcome >= 0.5000) ? "BLUE" :"RED"} \n
+				Average matchup deviation: ${(current_game.avg_matchup_deviation * 100.0000).toFixed(2)}% \n\n`)
+				.setFooter("\u2800".repeat(50))
+				.setTimestamp()
+
+				let msg_blue_side = ""
+				let msg_red_side = ""
+				let msg_outcome = ""
+				let msg_ping = ""
+
+				let x = 0
+
+				for (const matchup of current_game.game) {
+					player_states[matchup.player1] = ":arrows_counterclockwise:"
+					player_states[matchup.player2] = ":arrows_counterclockwise:"			
+					let p1_name = matchup.player1
+					let p2_name = matchup.player2
+					try {
+						p1_name = await client.users.fetch(matchup.player1)
+						msg_ping += `${p1_name}`
+						p1_name = await client.users.fetch(matchup.player2)
+						msg_ping += `${p2_name}`
+					} catch(error) {}
+
+					msg_blue_side += `${getRoleEmoji(x)} \u2800 ${player_states[matchup.player1]} ${p1_name} \u2800 \n`
+					msg_red_side += `${getRoleEmoji(x)} \u2800 ${player_states[matchup.player2]} ${p2_name} \u2800 \n`
+					msg_outcome += `${(matchup.probability * 100.0000).toFixed(2)}% \n`
+					x++
+				}
+
+
+				game_embed.addField("BLUE", msg_blue_side, true)
+				game_embed.addField("RED", msg_red_side, true)
+				game_embed.addField("OUTCOME", msg_outcome, true)
+
+				let btn_accept = new MessageButton()
+				.setLabel("Accept")
+				.setID("accept_game")
+				.setStyle("green")
+
+				let btn_decline = new MessageButton()
+				.setLabel("Decline")
+				.setID("decline_game")
+				.setStyle("red")
+
+				game_message = await message.channel.send(`||${msg_ping}||`, {buttons: [btn_accept, btn_decline], embed: game_embed})
+			
+				break
+			case "won":
+			case "win":
 				
 				break
 			case "delete":
@@ -170,11 +284,22 @@ client.on("message", async (message) => {
 	}
 })
 
+client.on("clickButton", async (button) => {
+	switch (button.id) {
+		case "accept_game":
+			player_states[button.clicker.id] = ":white_check_mark:"
+			updateGameCard()
+			break
+		case "decline_game":
+			player_states[button.clicker.id] = ":x:"
+			updateGameCard()
+			break
+	}
+
+	button.reply.defer()
+})
+
 mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin`, {user: process.env.DB_USER, pass: process.env.DB_PASS, useNewUrlParser: true, useUnifiedTopology: true}).then(() => {
 	client.login(process.env.BOT_TOKEN)
 })
-
-/*mongoose.connect(`${process.env.db_host}/${process.env.db_name}?authSource=admin`,{user: process.env.db_user, pass: process.env.db_pass, useNewUrlParser: true,useUnifiedTopology: true}).then(() => {
-	client.login(process.env.BOT_TOKEN)
-})*/
 
