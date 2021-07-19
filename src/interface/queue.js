@@ -18,9 +18,7 @@ export const addToQueue = async (id, roles) => {
 }
 
 export const getQueue = async () => {
-	const queue = await Queue.find()
-
-	return queue
+	return Queue.find();
 }
 
 export const clearQueue = async () => {
@@ -30,13 +28,9 @@ export const clearQueue = async () => {
 }
 
 export const playersInQueue = async () => {
-	const players = await Queue.find()
-
-	return players
+	return Queue.find()
 }
 
 export const playersInRole = async (role) => {
-	const players = await Queue.find({roles: role}, "_id")
-
-	return players
+	return Queue.find({roles: role}, "_id")
 }
