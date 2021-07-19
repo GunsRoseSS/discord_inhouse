@@ -15,7 +15,7 @@ import {addToQueue, clearQueue, playersInQueue} from "./interface/queue.js"
 import { findMatch } from "./interface/matchmaking.js"
 
 import {formatRoles, formatUsers} from "./helpers/format.js"
-import {convertMatchHistoryToEmbed} from "./interface/games.js";
+import {convertMatchHistoryToEmbed, createGame, getMatchHistoryData} from "./interface/games.js";
 
 const admins = ["278604461436567552"]
 
@@ -121,13 +121,45 @@ client.on("message", async (message) => {
 			case 'history':
 				message.react('📖')
 
+				let userHistoryData = await getMatchHistoryData(await getUserMatchHistory(message.author.id), message.author.id);
+
 				const historyEmbed = new MessageEmbed()
-					.setTitle("History")
-					.setDescription(await convertMatchHistoryToEmbed(await getUserMatchHistory(message.author.id)))
+					.setTitle(`:book: Match history for ${message.member.displayName} :book:`)
+					.setColor('0099ff')
+					.addFields({
+						name: 'Match ID',
+						value: await convertMatchHistoryToEmbed(userHistoryData.matches),
+						inline: true
+					},
+						{
+							name: 'Date',
+							value: await convertMatchHistoryToEmbed(userHistoryData.dates),
+							inline: true
+						},
+						{
+							name: 'Role',
+							value: await convertMatchHistoryToEmbed(userHistoryData.roles),
+							inline: true
+						},
+						{
+							name: 'Champion',
+							value: await convertMatchHistoryToEmbed(userHistoryData.champions),
+							inline: true
+						},
+						{
+							name: 'Win/Loss',
+							value: await convertMatchHistoryToEmbed(userHistoryData.winLoss),
+							inline: true
+						},
+						{
+							name: 'MMR gain/loss',
+							value: await convertMatchHistoryToEmbed(userHistoryData.mmrGainLoss),
+							inline: true
+						},)
 					.addField('How to view Match History',
 						'In order to view your match, click on the link below and log in. Then,' +
-						'click on any of your matches and replace the FIRST set of numbers with your match ID.')
-					.addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/')
+						'click on any of your matches and replace the FIRST set of numbers with your match ID.', false)
+					.addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/', false)
 
 				message.channel.send(historyEmbed)
 				break
