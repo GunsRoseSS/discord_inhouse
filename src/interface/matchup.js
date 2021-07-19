@@ -1,4 +1,3 @@
-import Matchup from "../models/matchup.js"
 import User from "../models/user.js"
 
 //Takes a role and an array of player id's

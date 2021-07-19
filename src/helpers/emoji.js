@@ -1,14 +1,25 @@
 export const getRoleEmoji = (role) => {
     switch (role) {
-        case 0:
+        case "top":
             return ":island:"
-        case 1:
+        case "jgl":
             return ":dog:"
-        case 2:
+        case "mid":
             return ":airplane:"
-        case 3:
+        case "adc":
             return ":cry:"
-        case 4:
+        case "sup":
             return ":ambulance:"
+    }
+}
+
+export const getStateEmoji = (state) => {
+    switch (state) {
+        case "accept":
+            return ":white_check_mark:"
+        case "decline":
+            return ":x:"
+        case "none":
+            return ":arrows_counterclockwise:"
     }
 }
