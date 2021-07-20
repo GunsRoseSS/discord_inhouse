@@ -2,9 +2,32 @@ import mongoose from "mongoose"
 
 const userSchema = mongoose.Schema({
 	_id: String,
-	elo: {
-		type: Map,
-		of: Number
+	roles: {
+		top: {
+			mmr: Number,
+			wins: Number,
+			losses: Number
+		},
+		jgl: {
+			mmr: Number,
+			wins: Number,
+			losses: Number
+		},
+		mid: {
+			mmr: Number,
+			wins: Number,
+			losses: Number
+		},
+		adc: {
+			mmr: Number,
+			wins: Number,
+			losses: Number
+		},
+		sup: {
+			mmr: Number,
+			wins: Number,
+			losses: Number
+		},
 	},
 	matchHistory: [{type: String}]
 })

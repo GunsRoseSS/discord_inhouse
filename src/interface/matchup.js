@@ -10,11 +10,33 @@ export const getMatchups = async (role,players) => {
 	//Currently does 1 query per matchup
 	//TODO: Optimise by reducing number of queries
 	for (let i=0;i<players.length;i++) {
-		//j=0 = normal + inversed, j=i+1 = normal
+		//j=0 = normal + inversed, j=i+1 = normal TODO: CHANGE THIS TO ONLY NORMAL
 		for (let j=0;j<players.length;j++) {
 			if (i != j) {
-				const player1Elo = users[i].elo.get(role)
-				const player2Elo = users[j].elo.get(role)
+				let player1Elo = undefined
+				let player2Elo = undefined
+				switch (role.toLowerCase()) {
+					case 'top':
+						player1Elo = users[i].roles.top.mmr
+						player2Elo = users[j].roles.top.mmr
+						break
+					case 'jgl':
+						player1Elo = users[i].roles.jgl.mmr
+						player2Elo = users[j].roles.jgl.mmr
+						break
+					case 'mid':
+						player1Elo = users[i].roles.mid.mmr
+						player2Elo = users[j].roles.mid.mmr
+						break
+					case 'adc':
+						player1Elo = users[i].roles.adc.mmr
+						player2Elo = users[j].roles.adc.mmr
+						break
+					case 'sup':
+						player1Elo = users[i].roles.sup.mmr
+						player2Elo = users[j].roles.sup.mmr
+						break
+				}
 	
 				out.push({player1: users[i]._id, player2: users[j]._id, probability: calculateExpectedOutcome(player1Elo, player2Elo)})
 			}		

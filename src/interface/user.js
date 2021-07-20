@@ -1,28 +1,54 @@
 import User from "../models/user.js"
 
 export const createUser = async (id, elo) => {
-	var startingElo
+	//Warning: create users only through the queue command, or it will fuck up your id and therefore everything else.
+	var startingElo;
 
 	if (elo) {
-		startingElo = {"top":elo[0], "jgl":elo[1],"mid":elo[2], "adc":elo[3],"sup":elo[4]}
+		startingElo = [elo[0], elo[1], elo[2], elo[3], elo[4]];
 	} else {
-		const initial = 400
-		startingElo = {"top":initial, "jgl":initial,"mid":initial, "adc":initial,"sup":initial}
+		startingElo = [500, 500, 500, 500, 500];
 	}
 
 	const user = await getUser(id)
 
 	if (!user) {
-		const newUser = new User({_id:id, elo: startingElo})
+		const newUser = new User({
+			_id: id.toString(),
+			roles: {
+				top: {
+					mmr: startingElo[0],
+					wins: 0,
+					losses: 0
+				},
+				jgl: {
+					mmr: startingElo[1],
+					wins: 0,
+					losses: 0
+				},
+				mid: {
+					mmr: startingElo[2],
+					wins: 0,
+					losses: 0
+				},
+				adc: {
+					mmr: startingElo[3],
+					wins: 0,
+					losses: 0
+				},
+				sup: {
+					mmr: startingElo[4],
+					wins: 0,
+					losses: 0
+				},
+			},
+			matchHistory: []
+		})
 
 		await newUser.save()
 
 		return newUser
 	}
-
-	user.elo = startingElo
-
-	await user.save()
 
 	return user
 }
@@ -45,7 +71,7 @@ export const addElo = async (id, role, amount) => {
 	}
 }
 
-export const getUsers = async(id) => {
+export const getUsers = async() => {
 	return User.find();
 }
 
