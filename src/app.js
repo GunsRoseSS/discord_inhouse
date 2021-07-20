@@ -214,6 +214,8 @@ client.on("message", async (message) => {
 				});
 				break
 			case 'ranking':
+				message.react('🏅');
+
 				if (args.length === 0){
 					let ranking = await allRoleRanking();
 					let pages = embedRankingPages(ranking, true)

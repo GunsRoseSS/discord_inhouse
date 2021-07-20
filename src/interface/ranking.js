@@ -331,7 +331,7 @@ export const embedAllRoleRanks = (ranks, type) => {
                     embedString = embedString + ranks[rank].mmr + ", " + ranks[rank].wins + "/" + ranks[rank].losses + '\n'
                     break
                 case 'player':
-                    embedString = embedString + ranks[rank][0] + '\n'
+                    embedString = embedString + "<@" + ranks[rank][0] + ">" + '\n'
                     break
                 case 'playerRole':
                     embedString = embedString + ranks[rank].playerID + '\n'
