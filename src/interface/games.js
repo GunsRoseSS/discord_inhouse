@@ -1,4 +1,5 @@
 import Game from "../models/game.js";
+import {emojiNumberSelector} from "../helpers/emoji.js";
 
 // import * as https from "node/https";
 //
@@ -30,8 +31,7 @@ import Game from "../models/game.js";
 // }
 
 export const createGame = async (gameData) => {
-    let newGame = new Game(
-        {
+    let newGame = new Game({
             matchID: 5372475920,
             players: [
                 {
@@ -45,8 +45,7 @@ export const createGame = async (gameData) => {
             ],
             winner: 'red',
             date: new Date().setHours(0, 0, 0, 0)
-        }
-    )
+    })
 
     await newGame.save()
 
@@ -103,31 +102,12 @@ export const convertMatchHistoryToEmbed = async (values) => {
     let embedString = '';
     for (let index in values) { //horribly coded, but works because embed doesnt pick up empty lines xd
         switch (typeof values[index]) {
+            // TODO: ADD EMOJIS TO ROLES AND WIN/LOSS
             case 'string':
                 if (isNaN(values[index])){
                     embedString = embedString + values[index].toUpperCase() + '\n';
                 } else {
-                    let numberEmoji;
-                    switch (parseInt(index)){
-                        case 0:
-                            numberEmoji = ':one: '
-                            break
-                        case 1:
-                            numberEmoji = ':two: '
-                            break
-                        case 2:
-                            numberEmoji = ':three: '
-                            break
-                        case 3:
-                            numberEmoji = ':four: '
-                            break
-                        case 4:
-                            numberEmoji = ':five: '
-                            break
-                        default:
-                            numberEmoji = "";
-                            break
-                    }
+                    let numberEmoji = emojiNumberSelector(parseInt(index) + 1);
                     embedString = embedString + numberEmoji + values[index] + '\n';
                 }
                 break

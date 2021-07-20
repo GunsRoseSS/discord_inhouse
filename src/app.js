@@ -7,6 +7,8 @@ import { Client, MessageEmbed } from "discord.js"
 
 const client = new Client()
 
+import EasyEmbedPages from 'easy-embed-pages'
+
 import disbut, {MessageButton} from "discord-buttons"
 disbut(client)
 
@@ -16,6 +18,13 @@ import { findMatch } from "./interface/matchmaking.js"
 
 import {formatRoles, formatUsers} from "./helpers/format.js"
 import {convertMatchHistoryToEmbed, createGame, getMatchHistoryData} from "./interface/games.js";
+import {
+	allRoleRanking,
+	embedPlayerRanks,
+	embedRankingPages,
+	getPlayerRanking, getRoleRanking,
+	updateRoleRanking
+} from "./interface/ranking.js";
 
 const admins = ["278604461436567552"]
 
@@ -75,12 +84,12 @@ client.on("message", async (message) => {
 				message.channel.send("Game found")
 
 				/*
-					TODO: 
+					TODO:
 
 					- Display match to users (need to convert discord_id to username?)
 					- Save match globally
 				*/
-				
+
 				break
 			case "delete":
 				await deleteUsers()
@@ -164,8 +173,87 @@ client.on("message", async (message) => {
 				message.channel.send(historyEmbed)
 				break
 			case 'epic':
-				message.channel.send('epic')
+				message.channel.send('epic');
 				break
+			case 'rank':
+				message.react('👑');
+
+				let playerRanks = await getPlayerRanking(message.author.id)
+
+				const rankEmbed = new EasyEmbedPages(message.channel,
+					{
+						color: 'ff00ff',
+						title: `Ranks for ${message.member.displayName}`,
+						description: 'Type !ranking or !ranking [role] for role rankings',
+						pages: [
+							{
+								fields: [
+									{
+										name: "Role & Rank",
+										value: embedPlayerRanks(playerRanks, 'rank'),
+										inline: true
+									},
+									{
+										name: "MMR",
+										value: embedPlayerRanks(playerRanks, 'mmr'),
+										inline: true
+									},
+									{
+										name: "Win/Loss",
+										value: embedPlayerRanks(playerRanks, 'winLoss'),
+										inline: true
+									}
+								]
+							}
+						]
+					}
+				)
+				rankEmbed.start({
+					channel: message.channel,
+					person: message.author
+				});
+				break
+			case 'ranking':
+				message.react('🏅');
+
+				if (args.length === 0){
+					let ranking = await allRoleRanking();
+					let pages = embedRankingPages(ranking, true)
+
+					const rankEmbed = new EasyEmbedPages(message.channel,
+						{
+							color: 'ff77ff',
+							title: `Ranks for all roles`,
+							description: 'Type !ranking [role] for a specific role',
+							pages: pages,
+							allowStop: true,
+							time: 300000,
+							ratelimit: 1500
+						}
+					)
+					rankEmbed.start();
+				} else{
+					if (args[0].toLowerCase() === 'top' || args[0].toLowerCase() === 'jgl' || args[0].toLowerCase() === 'mid' || args[0].toLowerCase() === 'adc' || args[0].toLowerCase() === 'sup') {
+						let ranking = await getRoleRanking(args[0]);
+						let pages = embedRankingPages(ranking, false)
+
+						const rankEmbed = new EasyEmbedPages(message.channel,
+							{
+								color: 'aa77ff',
+								title: `Ranks for ${args[0]}`,
+								description: 'Type !ranking for a ranking of all roles.',
+								pages: pages,
+								allowStop: true,
+								time: 300000,
+								ratelimit: 1500
+							}
+						)
+						rankEmbed.start();
+					} else{
+						message.channel.send('Are you fucking retarded? Learn to spell a role: top, jgl, mid, adc or sup.')
+					}
+				}
+
 		}
 	}
 })
