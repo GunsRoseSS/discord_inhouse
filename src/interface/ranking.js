@@ -97,18 +97,44 @@ export const getPlayerRanking = async (playerID) => {
 export const getRoleRanking = async (role) => {
     let ranking = await Ranking.find();
     ranking = ranking[0];
+    let filteredRanking = [];
 
     switch (role) {
         case 'top':
-            return ranking.roles.top
+            for (let player of ranking.roles.top){
+                if (!(player.wins == 0 && player.losses == 0)){
+                    filteredRanking.push(player);
+                }
+            }
+            return filteredRanking
         case 'jgl':
-            return ranking.roles.jgl
+            for (let player of ranking.roles.jgl){
+                if (!(player.wins == 0 && player.losses == 0)){
+                    filteredRanking.push(player);
+                }
+            }
+            return filteredRanking
         case 'mid':
-            return ranking.roles.mid
+            for (let player of ranking.roles.mid){
+                if (!(player.wins == 0 && player.losses == 0)){
+                    filteredRanking.push(player);
+                }
+            }
+            return filteredRanking
         case 'adc':
-            return ranking.roles.adc
+            for (let player of ranking.roles.adc){
+                if (!(player.wins == 0 && player.losses == 0)){
+                    filteredRanking.push(player);
+                }
+            }
+            return filteredRanking
         case 'sup':
-            return ranking.roles.sup
+            for (let player of ranking.roles.sup){
+                if (!(player.wins == 0 && player.losses == 0)){
+                    filteredRanking.push(player);
+                }
+            }
+            return filteredRanking
     }
 }
 
@@ -116,19 +142,19 @@ export const allRoleRanking = async () => { //this is done by directly arranging
     let players = await getUsers();
     let allRoleList = [];
     for (let player of players) {
-        if (player.roles.top.mmr) {
+        if (player.roles.top.mmr && !(player.roles.top.wins === 0 && player.roles.top.losses === 0)) {
             allRoleList.push([player._id, 'top', player.roles.top.mmr, player.roles.top.wins, player.roles.top.losses])
         }
-        if (player.roles.jgl.mmr) {
+        if (player.roles.jgl.mmr && !(player.roles.jgl.wins === 0 && player.roles.jgl.losses === 0)) {
             allRoleList.push([player._id, 'jgl', player.roles.jgl.mmr, player.roles.jgl.wins, player.roles.jgl.losses])
         }
-        if (player.roles.mid.mmr) {
+        if (player.roles.mid.mmr && !(player.roles.mid.wins === 0 && player.roles.mid.losses === 0)) {
             allRoleList.push([player._id, 'mid', player.roles.mid.mmr, player.roles.mid.wins, player.roles.mid.losses])
         }
-        if (player.roles.adc.mmr) {
+        if (player.roles.adc.mmr && !(player.roles.adc.wins === 0 && player.roles.adc.losses === 0)) {
             allRoleList.push([player._id, 'adc', player.roles.adc.mmr, player.roles.adc.wins, player.roles.adc.losses])
         }
-        if (player.roles.sup.mmr) {
+        if (player.roles.sup.mmr && !(player.roles.sup.wins === 0 && player.roles.sup.losses === 0)) {
             allRoleList.push([player._id, 'sup', player.roles.sup.mmr, player.roles.sup.wins, player.roles.sup.losses])
         }
     }
@@ -280,30 +306,83 @@ export const embedRankingPages = (ranking, all) => {
 
 export const embedPlayerRanks = (ranks, type) => {
     let embedString = '';
+    let skipRole = {
+        top: false,
+        jgl: false,
+        mid: false,
+        adc: false,
+        sup: false
+    };
+
+    if (ranks.top.wins === 0 && ranks.top.losses === 0){
+        skipRole.top = true;
+    }
+    if (ranks.jgl.wins === 0 && ranks.jgl.losses === 0){
+        skipRole.jgl = true;
+    }
+    if (ranks.mid.wins === 0 && ranks.mid.losses === 0){
+        skipRole.mid = true;
+    }
+    if (ranks.adc.wins === 0 && ranks.adc.losses === 0){
+        skipRole.adc = true;
+    }
+    if (ranks.sup.wins === 0 && ranks.sup.losses === 0){
+        skipRole.sup = true;
+    }
 
     switch (type) {
         case 'rank':
-            embedString = "Top " + emojiNumberSelector(ranks.top.place) + '\n'
-                + "Jungle " + emojiNumberSelector(ranks.jgl.place) + '\n'
-                + "Mid " + emojiNumberSelector(ranks.mid.place) + '\n'
-                + "ADC " + emojiNumberSelector(ranks.adc.place) + '\n'
-                + "Support " + emojiNumberSelector(ranks.sup.place)
+            if (!skipRole.top){
+                embedString = embedString + "Top " + emojiNumberSelector(ranks.top.place) + '\n';
+            }
+            if (!skipRole.jgl){
+                embedString = embedString + "Jungle " + emojiNumberSelector(ranks.jgl.place) + '\n';
+            }
+            if (!skipRole.mid){
+                embedString = embedString + "Mid " + emojiNumberSelector(ranks.mid.place) + '\n';
+            }
+            if (!skipRole.adc){
+                embedString = embedString + "ADC " + emojiNumberSelector(ranks.adc.place) + '\n';
+            }
+            if (!skipRole.sup){
+                embedString = embedString + "Support " + emojiNumberSelector(ranks.sup.place) + '\n';
+            }
 
             return embedString
         case 'mmr':
-            embedString = ranks.top.mmr + '\n'
-                + ranks.jgl.mmr + '\n'
-                + ranks.mid.mmr + '\n'
-                + ranks.adc.mmr + '\n'
-                + ranks.sup.mmr
+            if (!skipRole.top){
+                embedString = embedString + ranks.top.mmr + '\n';
+            }
+            if (!skipRole.jgl){
+                embedString = embedString + ranks.jgl.mmr + '\n';
+            }
+            if (!skipRole.mid){
+                embedString = embedString + ranks.mid.mmr + '\n';
+            }
+            if (!skipRole.adc){
+                embedString = embedString + ranks.adc.mmr + '\n';
+            }
+            if (!skipRole.sup){
+                embedString = embedString + ranks.sup.mmr + '\n';
+            }
 
             return embedString
         case 'winLoss':
-            embedString = ranks.top.wins + '/' + ranks.top.losses + '\n'
-                + ranks.jgl.wins + '/' + ranks.jgl.losses + '\n'
-                + ranks.mid.wins + '/' + ranks.mid.losses + '\n'
-                + ranks.adc.wins + '/' + ranks.adc.losses + '\n'
-                + ranks.sup.wins + '/' + ranks.sup.losses
+            if (!skipRole.top){
+                embedString = embedString + ranks.top.wins + '/' + ranks.top.losses + '\n';
+            }
+            if (!skipRole.jgl){
+                embedString = embedString + ranks.jgl.wins + '/' + ranks.top.losses + '\n';
+            }
+            if (!skipRole.mid){
+                embedString = embedString + ranks.mid.wins + '/' + ranks.top.losses + '\n';
+            }
+            if (!skipRole.adc){
+                embedString = embedString + ranks.adc.wins + '/' + ranks.top.losses + '\n';
+            }
+            if (!skipRole.sup){
+                embedString = embedString + ranks.sup.wins + '/' + ranks.top.losses + '\n';
+            }
 
             return embedString
     }
