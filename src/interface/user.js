@@ -62,6 +62,14 @@ export const getUser = async (id) => {
 	return null
 }
 
+export const getUserElo = async (id, role) => {
+	const user = await getUser(id)
+
+	if (user) {
+		return user.roles[role].mmr
+	}
+}
+
 export const addElo = async (id, role, amount) => {
 	const user = await getUser(id)
 	

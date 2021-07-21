@@ -9,7 +9,6 @@ export const getMatchMessageEmbed = (match, player_states, started = false) => {
 		.setDescription(`Expected outcome: ${(match.expected_outcome  * 100.0000).toFixed(2)}% ${(match.expected_outcome >= 0.5000) ? "BLUE" :"RED"} \n
 		Average matchup deviation: ${(match.avg_matchup_deviation * 100.0000).toFixed(2)}% \n\n`)
 		.setFooter("\u2800".repeat(50))
-		.setTimestamp()
 
 		let msg_blue_side = ""
 		let msg_red_side = ""
@@ -66,19 +65,23 @@ export const getMatchEndMessageEmbed = (initiator, winner, player_states) => {
 		if (p.state === "accept") {
 			count++
 		}
-		msg += getStateEmoji(p.state)
+		//msg += getStateEmoji(p.state)
 		msg_ping += `${p.user}`
 	})
+
+	msg += getStateEmoji("accept").repeat(count)
+	msg += getStateEmoji("none").repeat(10 - count)
+
 	msg += `\u2800 \u2800 ${count}/6`
 
 	let match_embed = new MessageEmbed()
 	.setTitle("Confirm match end")
 	.setDescription(msg)
-
+	
 	let btn_confirm = new MessageButton()
-		.setLabel("Confirm")
-		.setID("confirm_win")
-		.setStyle("green")
+	.setLabel("Confirm")
+	.setID("confirm_win")
+	.setStyle("green")
 
 	let btn_deny = new MessageButton()
 	.setLabel("Deny")

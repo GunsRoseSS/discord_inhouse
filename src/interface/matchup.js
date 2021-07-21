@@ -7,8 +7,7 @@ export const getMatchups = async (role,players) => {
 	let out = []
 
 	const users = await User.find({$or: players})
-	//Currently does 1 query per matchup
-	//TODO: Optimise by reducing number of queries
+
 	for (let i=0;i<players.length;i++) {
 		//j=0 = normal + inversed, j=i+1 = normal TODO: CHANGE THIS TO ONLY NORMAL
 		for (let j=0;j<players.length;j++) {
@@ -46,7 +45,14 @@ export const getMatchups = async (role,players) => {
 	return out
 }
 
-const calculateExpectedOutcome = (elo1, elo2) => {
+export const calculateExpectedOutcome = (elo1, elo2) => {
 	return 1 / (1 + Math.pow(10, (elo2 - elo1)/400))
+}
+
+export const calculateNewElo = (elo1, elo2, win) => {
+	let outcome = calculateExpectedOutcome(elo1, elo2)
+	win = win ? 1 : 0;
+
+	return elo1 + (32 * (win - outcome))
 }
 

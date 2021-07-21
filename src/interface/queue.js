@@ -1,3 +1,9 @@
+import { MessageEmbed } from "discord.js"
+import {MessageButton} from "discord-buttons"
+
+import { getRoleEmoji } from "../helpers/emoji.js"
+import { formatUsers } from "../helpers/format.js"
+
 import Queue from "../models/queue.js"
 
 export const addToQueue = async (id, roles) => {
@@ -33,4 +39,24 @@ export const playersInQueue = async () => {
 
 export const playersInRole = async (role) => {
 	return Queue.find({roles: role}, "_id")
+}
+
+export const getQueueEmbed = async () => {
+	const roles = ["top", "jgl", "mid", "adc", "sup"]
+
+	let queue_embed = new MessageEmbed()
+	.setTitle("Current queue")
+	.setColor("#FF0F00")
+
+	let msg = ""
+
+	for (const role of roles) {
+		let players = formatUsers(await playersInRole(role)).reduce((out, player) => {return [...out, `<@${player}>`]}, [])
+
+		msg += `${getRoleEmoji(role)} \u2800 ${players.join(", ")} \n`
+	}
+
+	queue_embed.setDescription(msg)
+
+	return queue_embed
 }

@@ -1,5 +1,11 @@
 import Game from "../models/game.js";
-import {emojiNumberSelector} from "../helpers/emoji.js";
+import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js";
+import { getUserElo } from "./user.js";
+
+import { MessageEmbed } from "discord.js"
+import {MessageButton} from "discord-buttons"
+
+import { calculateNewElo } from "./matchup.js";
 
 // import * as https from "node/https";
 //
@@ -30,7 +36,8 @@ import {emojiNumberSelector} from "../helpers/emoji.js";
 //     })
 // }
 
-export const createGame = async (gameData) => {
+
+/*
     let newGame = new Game({
             matchID: 5372475920,
             players: [
@@ -47,6 +54,87 @@ export const createGame = async (gameData) => {
             date: new Date().setHours(0, 0, 0, 0)
     })
 
+    */
+
+const dateOrdinal = (d) => {
+        return d+(31==d||21==d||1==d?"st":22==d||2==d?"nd":23==d||3==d?"rd":"th")
+};
+
+const convertToPlayerList = async (game, champs, winner) => {
+    let blue = []
+    let red = []
+
+    const roles = ["top", "jgl", "mid", "adc", "sup"]
+
+    for (let i=0;i<game.length;i++) {
+        const elo1 = await getUserElo(game[i].player1, roles[i])
+        const elo2 = await getUserElo(game[i].player2, roles[i])
+
+        blue.push({
+            id: game[i].player1,
+            team: "blue",
+            role: roles[i],
+            champion: champs["BLUE"][i],
+            previousElo: elo1,
+            afterGameElo: calculateNewElo(elo1, elo2, winner == "BLUE" ? true : false)
+        })
+
+        red.push({
+            id: game[i].player2,
+            team: "red",
+            role: roles[i],
+            champion: champs["RED"][i],
+            previousElo: elo2,
+            afterGameElo: calculateNewElo(elo2, elo1, winner == "RED" ? true : false)
+        })
+    }
+
+    return blue.concat(red)
+}
+
+export const getGameEmbed = (game) => {
+
+    let msg_blue = ""
+    let msg_red = ""
+    let msg_ping = ""
+
+    for (let i=0;i<game.players.length;i++) {
+        let player = game.players[i]
+        let elo_diff = player.afterGameElo - player.previousElo
+        if (Math.floor(i / 5) == 0) {
+            msg_blue += `${getRoleEmoji(player.role)} \u2800 <@${player.id}> : ${player.champion.split(/(?=[A-Z])/).join(" ")} **${elo_diff < 0 ? "-" : "+"}${Math.abs(elo_diff)}** \n`
+        } else {
+            msg_red += `${getRoleEmoji(player.role)} \u2800 <@${player.id}> : ${player.champion.split(/(?=[A-Z])/).join(" ")} **${elo_diff < 0 ? "-" : "+"}${Math.abs(elo_diff)}** \n`
+        }
+        msg_ping += `<@${player.id}>`
+    }
+
+    let game_embed = new MessageEmbed()
+    .setTitle(`Match ${game._id} results`)
+
+    game_embed.addField("BLUE", msg_blue, true)
+	game_embed.addField("RED", msg_red, true)
+
+    let date = game.date.toString()
+    let date_p1 = date.substring(0,9)
+    let date_p2 = dateOrdinal(date.substring(9,10))
+    let date_p3 = date.substring(10,15)
+
+    game_embed.setFooter(`Played on ${date_p1 + date_p2 + date_p3}`)
+
+    return {msg: msg_ping, embed: game_embed}
+
+}
+
+export const createGame = async (game, champs, winner) => {
+
+    let newGame = new Game({
+        matchID: 0,
+        players: await convertToPlayerList(game, champs, winner),
+        winner: winner,
+        date: new Date().setHours(0, 0, 0, 0)
+    })
+    
     await newGame.save()
 
     return newGame
@@ -61,7 +149,7 @@ export const patchGame = async (gameData) => {
 }
 
 export const getGameByMatchID = async (matchID) => {
-    return Game.find({matchID: matchID})
+    return Game.findOne({matchID: matchID})
 }
 
 export const getMatchHistoryData = async (matches, userID) => {
@@ -73,7 +161,6 @@ export const getMatchHistoryData = async (matches, userID) => {
 
     for (let match of matches) {
         let matchData = await getGameByMatchID(match);
-        matchData = matchData[0]; //for some reason Mongoose passes it back in a list, weird af
         dates.push(matchData.date);
         for (let player of matchData.players) {
             if (player.id == userID){

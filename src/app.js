@@ -13,14 +13,14 @@ import disbut from "discord-buttons"
 disbut(client)
 
 import {createUser, getUser,getUsers, getUserMatchHistory} from "./interface/user.js"
-import {addToQueue, clearQueue, playersInQueue} from "./interface/queue.js"
+import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, getQueue} from "./interface/queue.js"
 import { findMatch } from "./interface/matchmaking.js"
 
-import {formatRoles, formatUsers} from "./helpers/format.js"
+import {formatRoles, formatUsers, formatChampions} from "./helpers/format.js"
 
 import { getMatchMessageEmbed,getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide } from "./interface/match.js"
 
-import {convertMatchHistoryToEmbed, createGame, getMatchHistoryData} from "./interface/games.js";
+import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData} from "./interface/games.js";
 import {
 	allRoleRanking,
 	embedPlayerRanks,
@@ -37,6 +37,7 @@ let player_states = {}
 let match_playing = false
 let initiator = null
 let winner = null
+let champs = {}
 
 client.on("ready",() => {
 	// client.channels.fetch("863014796915638296").then(channel => {
@@ -79,8 +80,13 @@ client.on("message", async (message) => {
 					user = await createUser(user_id)
 				}
 
-				await addToQueue(user_id, formatRoles(args))
+				let roles = formatRoles(args)
 
+				if (roles.length != 0) {
+					await addToQueue(user_id, formatRoles(args))
+					message.channel.send(await getQueueEmbed())
+				}
+				
 				break
 			case "start":
 				let queue = await playersInQueue()
@@ -97,15 +103,8 @@ client.on("message", async (message) => {
 				player_states = {}
 
 				for (let matchup of current_match.game) {
-					let user1 = matchup.player1
-					let user2 = matchup.player2
-					try {
-						user1 = await client.users.fetch(user1)
-						user2 = await client.users.fetch(user2)
-					} catch (error) {}
-
-					player_states[matchup.player1] = {user: user1, state: "none"}
-					player_states[matchup.player2] = {user: user2, state: "none"}
+					player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
+					player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
 				}
 
 				{
@@ -149,12 +148,17 @@ client.on("message", async (message) => {
 							player_states[player].state = "none"
 						})
 
-						player_states[message.author.id].state =  "accept"
+						//player_states[message.author.id].state =  "accept"
+
 						initiator = player_states[message.author.id].user
 						winner = getPlayerSide(current_match, message.author.id)
 						let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
 
 						match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+
+						if ("RED" in champs && "BLUE" in champs) {
+
+						}
 					}			
 				}
 				break
@@ -175,10 +179,33 @@ client.on("message", async (message) => {
 					}			
 				}
 				break
+			case "lineup":
+				{
+					if (match_playing && message.author.id in player_states) {
+						let lineup = formatChampions(args)
+						let side = getPlayerSide(current_match, message.author.id)
+						if (lineup.length === 5) {
+							message.channel.send(`Set lineup for ${side} as: ${lineup.join(", ")}`)
+
+							champs[side] = lineup
+						} else {
+							message.channel.send(`Message had too few/many champs: ${lineup.join(", ")}`)
+						}
+					}
+				}
+				break
+			case "lineup2":
+				{
+					champs["BLUE"] = ["Tristana", "Maokai", "Warwick", "Lulu", "Fiora"]
+					champs["RED"] = ["Ekko", "Vladimir", "LeeSin", "Rell", "Leona"]
+				}
+				break
 			case 'history':
 				message.react('📖')
 
 				let userHistoryData = await getMatchHistoryData(await getUserMatchHistory(message.author.id), message.author.id);
+
+				console.log(userHistoryData)
 
 				const historyEmbed = new MessageEmbed()
 					.setTitle(`:book: Match history for ${message.member.displayName} :book:`)
@@ -260,6 +287,9 @@ client.on("message", async (message) => {
 					channel: message.channel,
 					person: message.author
 				});
+				break
+			case "notepic":
+				message.channel.send(":poop:")
 				break
 			case 'ranking':
 				message.react('🏅');
@@ -347,6 +377,23 @@ client.on("clickButton", async (button) => {
 					let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
 
 					match_message.edit(`||${msg.msg}||`, msg.embed)
+
+					let count = 0
+
+					Object.keys(player_states).forEach(player => {
+						if (player_states[player].state === "accept") {
+							count++
+						}
+					})
+
+					if (count >= 1) {
+						await match_message.delete()
+
+						let game = await createGame(current_match.game, champs, winner)
+						//button.channel.send(`Game ${game._id} has been saved as a win for ${winner}`)
+						let embed = getGameEmbed(game)
+						button.channel.send(`||${embed.msg}||`, embed.embed)
+					}
 				}
 			}
 			break
