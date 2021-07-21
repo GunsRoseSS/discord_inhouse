@@ -62,6 +62,16 @@ export const quickSortPlayers = (players, role) => {
                 return 0
             })
             break
+        case 'champStats':
+            players.sort((champ1,champ2) => {
+                if (champ1.mmrDiff > champ2.mmrDiff) {
+                    return 1
+                } else if (champ1.mmrDiff < champ2.mmrDiff) {
+                    return -1
+                }
+                return 0
+            })
+            break
         default:
             return null
     }
