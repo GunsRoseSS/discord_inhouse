@@ -28,7 +28,8 @@ import {findMatch} from "./interface/matchmaking.js"
 
 import {checkPositive, formatChampions, formatRoles, formatUsers} from "./helpers/format.js"
 
-import { getMatchMessageEmbed,getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide } from "./interface/match.js"
+
+import {getMatchMessageEmbed, getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide} from "./interface/match.js"
 
 import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData, updateMatchID} from "./interface/games.js";
 import {
@@ -39,6 +40,7 @@ import {
     updateRoleRanking
 } from "./interface/ranking.js";
 import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js";
+import {convertHelpToEmbed} from "./interface/help.js";
 
 const admins = ["278604461436567552"]
 
@@ -50,11 +52,11 @@ let initiator = null
 let winner = null
 let champs = {}
 
-client.on("ready",() => {
-	// client.channels.fetch("863014796915638296").then(channel => {
-	// 	channel.send("Discord bot restarted and online!")
-	// })
-	console.log('Loaded!')
+client.on("ready", () => {
+    // client.channels.fetch("863014796915638296").then(channel => {
+    // 	channel.send("Discord bot restarted and online!")
+    // })
+    console.log('Loaded!')
 })
 
 client.on("message", async (message) => {
@@ -190,6 +192,7 @@ client.on("message", async (message) => {
 					}			
 				}
 				break
+			case "team":
 			case "lineup":
 				{
 					if (match_playing && message.author.id in player_states) {
@@ -211,6 +214,7 @@ client.on("message", async (message) => {
 					champs["RED"] = ["Ekko", "LeeSin", "Vladimir", "Rell", "Leona"]
 				}
 				break
+			case "past":
 			case 'history':
 				message.react('📖')
 
@@ -229,13 +233,28 @@ client.on("message", async (message) => {
 				break
 			case 'rank':
 				message.react('👑');
-
-				let playerRanks = await getPlayerRanking(message.author.id)
-
+	
+				let playerRanks;
+				let nickName;
+				if (args.length === 0) {
+					playerRanks = await getPlayerRanking(message.author.id);
+					nickName = message.member.displayName;
+				} else {
+					const player = args[0].slice(3, args[0].length - 1);
+					if (await getUser(player)){
+						playerRanks = await getPlayerRanking(player);
+						nickName = message.guild.member(player).displayName;
+					} else {
+						message.channel.send('Could not find player in the Database. Have they played a game before?')
+						break
+					}
+	
+				}
+	
 				const rankEmbed = new EasyEmbedPages(message.channel,
 					{
 						color: 'ff00ff',
-						title: `Ranks for ${message.member.displayName}`,
+						title: `Ranks for ${nickName}`,
 						description: 'Type !ranking or !ranking [role] for role rankings',
 						pages: [
 							{
@@ -258,45 +277,27 @@ client.on("message", async (message) => {
 								]
 							}
 						]
-					}
-				)
+					})
 				rankEmbed.start({
 					channel: message.channel,
 					person: message.author
 				});
 				break
-			case "notepic":
-				message.channel.send(":poop:")
-				break
-			case 'ranking':
-				message.react('🏅');
-
-				if (args.length === 0){
-					let ranking = await allRoleRanking();
-					let pages = embedRankingPages(ranking, true)
-
-					const rankEmbed = new EasyEmbedPages(message.channel,
-						{
-							color: 'ff77ff',
-							title: `Ranks for all roles`,
-							description: 'Type !ranking [role] for a specific role',
-							pages: pages,
-							allowStop: true,
-							time: 300000,
-							ratelimit: 1500
-						}
-					)
-					rankEmbed.start();
-				} else{
-					if (args[0].toLowerCase() === 'top' || args[0].toLowerCase() === 'jgl' || args[0].toLowerCase() === 'mid' || args[0].toLowerCase() === 'adc' || args[0].toLowerCase() === 'sup') {
-						let ranking = await getRoleRanking(args[0]);
-						let pages = embedRankingPages(ranking, false)
-
+				case "notepic":
+					message.channel.send(":poop:")
+					break
+				case 'ranking':
+					message.react('🏅');
+	
+					if (args.length === 0) {
+						let ranking = await allRoleRanking();
+						let pages = embedRankingPages(ranking, true)
+	
 						const rankEmbed = new EasyEmbedPages(message.channel,
 							{
-								color: 'aa77ff',
-								title: `Ranks for ${args[0]}`,
-								description: 'Type !ranking for a ranking of all roles.',
+								color: 'ff77ff',
+								title: `Ranks for all roles`,
+								description: 'Type !ranking [role] for a specific role',
 								pages: pages,
 								allowStop: true,
 								time: 300000,
@@ -304,12 +305,30 @@ client.on("message", async (message) => {
 							}
 						)
 						rankEmbed.start();
-					} else{
-						message.channel.send('Are you fucking retarded? Learn to spell a role: top, jgl, mid, adc or sup.')
+					} else {
+						if (args[0].toLowerCase() === 'top' || args[0].toLowerCase() === 'jgl' || args[0].toLowerCase() === 'mid' || args[0].toLowerCase() === 'adc' || args[0].toLowerCase() === 'sup') {
+							let ranking = await getRoleRanking(args[0]);
+							let pages = embedRankingPages(ranking, false)
+	
+							const rankEmbed = new EasyEmbedPages(message.channel,
+								{
+									color: 'aa77ff',
+									title: `Ranks for ${args[0]}`,
+									description: 'Type !ranking for a ranking of all roles.',
+									pages: pages,
+									allowStop: true,
+									time: 300000,
+									ratelimit: 1500
+								}
+							)
+							rankEmbed.start();
+						} else {
+							message.channel.send('Are you fucking retarded? Learn to spell a role: top, jgl, mid, adc or sup.')
+						}
 					}
-				}
-				break
-        case 'champion':
+					break
+				case 'champ':
+				case 'champion':
                 switch (args.length) {
                     case 1:
                         let champion = formatChampions([args[0]]);
@@ -416,9 +435,43 @@ client.on("message", async (message) => {
                     default:
                         message.channel.send('You messed up the command, sunshine. !champion [champion]');
                 }
+                break
+            case 'help':
+            case 'commands':
+                message.react('❓');
 
-		}
-	}
+                const helpEmbed = new EasyEmbedPages(message.channel, {
+                    title: ':question: Help page :question;',
+                    color: 'ffffff',
+                    footer: "Discord embed layouts are cancer so the help page looks like shit :////",
+                    allowStop: true,
+                    time: 300000,
+                    ratelimit: 1500,
+                    pages: [
+                        {
+                            description: convertHelpToEmbed(1)
+                        },
+                        {
+                            description: convertHelpToEmbed(2)
+                        },
+                        {
+                            description: convertHelpToEmbed(3)
+                        },
+                        {
+                            description: convertHelpToEmbed(4)
+                        },
+                    ]
+                })
+
+
+                helpEmbed.start({
+                    channel: message.channel,
+                    author: message.author
+                })
+                break
+
+        }
+    }
 })
 
 client.on("clickButton", async (button) => {
@@ -505,7 +558,12 @@ client.on("clickButton", async (button) => {
 
 })
 
-mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin`, {user: process.env.DB_USER, pass: process.env.DB_PASS, useNewUrlParser: true, useUnifiedTopology: true}).then(() => {
-	client.login(process.env.BOT_TOKEN)
+mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin`, {
+    user: process.env.DB_USER,
+    pass: process.env.DB_PASS,
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    client.login(process.env.BOT_TOKEN)
 })
 
