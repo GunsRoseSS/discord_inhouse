@@ -12,6 +12,8 @@ import EasyEmbedPages from 'easy-embed-pages'
 
 import disbut, {MessageButton} from "discord-buttons"
 
+import Game from "./models/game.js"
+
 disbut(client)
 
 import {
@@ -23,15 +25,14 @@ import {
     getUserChampionStats
 } from "./interface/user.js"
 
-import {addToQueue, clearQueue, playersInQueue, getQueueEmbed} from "./interface/queue.js"
+import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js"
 import {findMatch} from "./interface/matchmaking.js"
 
 import {checkPositive, formatChampions, formatRoles, formatUsers} from "./helpers/format.js"
 
-
 import {getMatchMessageEmbed, getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide} from "./interface/match.js"
 
-import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData, updateMatchID} from "./interface/games.js";
+import {convertMatchHistoryToEmbed, createGame, getGameByID, getGameEmbed, getMatchHistoryData, updateMatchID} from "./interface/games.js";
 import {
     allRoleRanking,
     embedPlayerRanks,
@@ -101,6 +102,46 @@ client.on("message", async (message) => {
 				}
 				
 				break
+			case "leave":
+				{
+					await leaveQueue(message.author.id)
+					message.channel.send(await getQueueEmbed())
+				}
+				break
+			case "test":
+				{
+					let id = "278604461436567552"
+
+					let matches = await getUserMatchHistory(id)
+
+					matches = matches.reduce((out, match) => {
+						return [...out,{_id: match}]
+					}, [])
+
+					let games = await Game.find({$or : matches})
+
+					games = games.reduce((out, game) => {
+						let player = game.players.find(element => element.id == id)
+						return [...out, {date: game.date, role: player.role, previousElo: player.previousElo, afterGameElo: player.afterGameElo}]
+					}, [])
+
+					//games = [{date, role, previousElo, afterGameElo},{date, role, previousElo, afterGameElo}]
+
+
+				}	
+			break
+			case "view":
+				{
+					let game = await getGameByID(args[0])
+
+					if (game) {
+						let embed = getGameEmbed(game)
+						message.channel.send(embed.embed)
+					} else {
+						message.channel.send(`Could not find match with id '${args[0]}'`)
+					}
+				}
+				break
 			case "start":
 				let queue = await playersInQueue()
 				let count = queue.length
@@ -112,18 +153,22 @@ client.on("message", async (message) => {
 
 				current_match = await findMatch()
 
-				match_playing = false
-				player_states = {}
-
-				for (let matchup of current_match.game) {
-					player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
-					player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
-				}
-
-				{
-					let msg = getMatchMessageEmbed(current_match, player_states)
-
-					match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+				if (current_match != null) {
+					match_playing = false
+					player_states = {}
+	
+					for (let matchup of current_match.game) {
+						player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
+						player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
+					}
+	
+					{
+						let msg = getMatchMessageEmbed(current_match, player_states)
+	
+						match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+					}
+				} else {
+					message.channel.send("Not enough role variation to find game, try queuing in more roles")
 				}
 			
 				break
@@ -491,6 +536,8 @@ client.on("clickButton", async (button) => {
 
 						await match_message.delete()
 
+						await clearQueue()
+
 					}
 				}
 				
@@ -529,9 +576,17 @@ client.on("clickButton", async (button) => {
 						await match_message.delete()
 
 						let game = await createGame(current_match.game, champs, winner)
-						//button.channel.send(`Game ${game._id} has been saved as a win for ${winner}`)
+						
 						let embed = getGameEmbed(game)
 						button.channel.send(`||${embed.msg}||`, embed.embed)
+
+						current_match = null
+						match_message = null
+						player_states = {}
+						match_playing = false
+						initiator = null
+						winner = null
+						champs = {}
 					}
 				}
 			}

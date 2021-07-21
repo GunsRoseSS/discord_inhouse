@@ -60,3 +60,7 @@ export const getQueueEmbed = async () => {
 
 	return queue_embed
 }
+
+export const leaveQueue = async (id) => {
+	await Queue.deleteOne({_id: id})
+}
