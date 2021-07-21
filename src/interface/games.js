@@ -169,6 +169,10 @@ export const updateMatchID = async (gameID, matchID) => {
     await Game.findByIdAndUpdate(gameID, {matchID: matchID})
 }
 
+export const getAllGames = async () => {
+    return Game.find()
+}
+
 export const getMatchHistoryData = async (id) => {
     let dates = [],
         roles = [],
