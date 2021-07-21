@@ -40,6 +40,7 @@ import {
     updateRoleRanking
 } from "./interface/ranking.js";
 import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js";
+import {convertHelpToEmbed} from "./interface/help.js";
 
 const admins = ["278604461436567552"]
 
@@ -190,6 +191,7 @@ client.on("message", async (message) => {
                     }
                 }
                 break
+            case 'team':
             case "lineup": {
                 if (match_playing && message.author.id in player_states) {
                     let lineup = formatChampions(args)
@@ -209,6 +211,7 @@ client.on("message", async (message) => {
                 champs["RED"] = ["Ekko", "Vladimir", "LeeSin", "Rell", "Leona"]
             }
                 break
+            case 'past':
             case 'history':
                 message.react('📖')
 
@@ -467,7 +470,37 @@ client.on("message", async (message) => {
                 break
             case 'help':
             case 'commands':
+                message.react('❓');
 
+                const helpEmbed = new EasyEmbedPages(message.channel, {
+                    title: ':question: Help page :question;',
+                    color: 'ffffff',
+                    footer: "Discord embed layouts are cancer so the help page looks like shit :////",
+                    allowStop: true,
+                    time: 300000,
+                    ratelimit: 1500,
+                    pages: [
+                        {
+                            description: convertHelpToEmbed(1)
+                        },
+                        {
+                            description: convertHelpToEmbed(2)
+                        },
+                        {
+                            description: convertHelpToEmbed(3)
+                        },
+                        {
+                            description: convertHelpToEmbed(4)
+                        },
+                    ]
+                })
+
+
+                helpEmbed.start({
+                    channel: message.channel,
+                    author: message.author
+                })
+                break
 
         }
     }
