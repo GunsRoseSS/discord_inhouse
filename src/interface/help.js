@@ -17,9 +17,9 @@ const helpData = [//this way it's easier to edit help in case we need to update 
         description: 'Displays the current ranking for all players for all roles (no arguments) or for a specific [role]'
     },
     {
-        name: 'help',
-        aliases: 'commands',
-        description: 'Displays all of the current accepted commands and their functionality.'
+        name: 'rank ?[@player]',
+        aliases: '-',
+        description: "Displays your current rank for all your roles. You can also view another [@player]'s rank."
     },
     {
         name: 'help',

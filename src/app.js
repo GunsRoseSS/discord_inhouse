@@ -100,57 +100,57 @@ client.on("message", async (message) => {
                 }
 
                 break
-            case "start":
-                let queue = await playersInQueue()
-                let count = queue.length
-
-                if (count < 10) {
-                    message.channel.send(`Not enough players in queue, need ${10 - count} more`)
-                    return
-                }
-
-                current_match = await findMatch()
-
-                match_playing = false
-                player_states = {}
-
-                for (let matchup of current_match.game) {
-                    player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
-                    player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
-                }
-
-            {
-                let msg = getMatchMessageEmbed(current_match, player_states)
-
-                match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
-            }
-
-                break
-            case "players": {
-                const players = formatUsers(await getUsers())
-
-                let msg = ""
-
-                await Promise.all(players.map(async (player) => {
-                    try {
-                        const user = await client.users.fetch(player)
-                        if (admins.includes(player)) {
-                            msg += `\n - ${user.username} :crown:`
-                        } else {
-                            msg += `\n - ${user.username} :poop:`
-                        }
-                    } catch (error) {
-                        msg += `\n - #${player} :worried:`
-                    }
-                }))
-
-                let embed = new MessageEmbed()
-                    .setTitle("Players")
-                    .setDescription(msg)
-
-                message.channel.send(embed)
-            }
-                break
+            // case "start":
+            //     let queue = await playersInQueue()
+            //     let count = queue.length
+            //
+            //     if (count < 10) {
+            //         message.channel.send(`Not enough players in queue, need ${10 - count} more`)
+            //         return
+            //     }
+            //
+            //     current_match = await findMatch()
+            //
+            //     match_playing = false
+            //     player_states = {}
+            //
+            //     for (let matchup of current_match.game) {
+            //         player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
+            //         player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
+            //     }
+            //
+            // {
+            //     let msg = getMatchMessageEmbed(current_match, player_states)
+            //
+            //     match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+            // }
+            //
+            //     break
+            // case "players": {
+            //     const players = formatUsers(await getUsers())
+            //
+            //     let msg = ""
+            //
+            //     await Promise.all(players.map(async (player) => {
+            //         try {
+            //             const user = await client.users.fetch(player)
+            //             if (admins.includes(player)) {
+            //                 msg += `\n - ${user.username} :crown:`
+            //             } else {
+            //                 msg += `\n - ${user.username} :poop:`
+            //             }
+            //         } catch (error) {
+            //             msg += `\n - #${player} :worried:`
+            //         }
+            //     }))
+            //
+            //     let embed = new MessageEmbed()
+            //         .setTitle("Players")
+            //         .setDescription(msg)
+            //
+            //     message.channel.send(embed)
+            // }
+            //     break
             case "win":
             case "won":
                 if (match_playing) {
@@ -274,6 +274,7 @@ client.on("message", async (message) => {
                         nickName = message.guild.member(player).displayName;
                     } else {
                         message.channel.send('Could not find player in the Database. Have they played a game before?')
+                        break
                     }
 
                 }
