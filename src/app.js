@@ -28,10 +28,9 @@ import {findMatch} from "./interface/matchmaking.js"
 
 import {checkPositive, formatChampions, formatRoles, formatUsers} from "./helpers/format.js"
 
-
 import { getMatchMessageEmbed,getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide } from "./interface/match.js"
 
-import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData} from "./interface/games.js";
+import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData, updateMatchID} from "./interface/games.js";
 import {
     allRoleRanking,
     embedPlayerRanks,
@@ -209,58 +208,24 @@ client.on("message", async (message) => {
 			case "lineup2":
 				{
 					champs["BLUE"] = ["Tristana", "Maokai", "Warwick", "Lulu", "Fiora"]
-					champs["RED"] = ["Ekko", "Vladimir", "LeeSin", "Rell", "Leona"]
+					champs["RED"] = ["Ekko", "LeeSin", "Vladimir", "Rell", "Leona"]
 				}
 				break
 			case 'history':
 				message.react('📖')
 
-				let userHistoryData = await getMatchHistoryData(await getUserMatchHistory(message.author.id), message.author.id);
+				let userHistoryData = await getMatchHistoryData(message.author.id);
 
-				console.log(userHistoryData)
-
-				const historyEmbed = new MessageEmbed()
-					.setTitle(`:book: Match history for ${message.member.displayName} :book:`)
-					.setColor('0099ff')
-					.addFields({
-						name: 'Match ID',
-						value: await convertMatchHistoryToEmbed(userHistoryData.matches),
-						inline: true
-					},
-						{
-							name: 'Date',
-							value: await convertMatchHistoryToEmbed(userHistoryData.dates),
-							inline: true
-						},
-						{
-							name: 'Role',
-							value: await convertMatchHistoryToEmbed(userHistoryData.roles),
-							inline: true
-						},
-						{
-							name: 'Champion',
-							value: await convertMatchHistoryToEmbed(userHistoryData.champions),
-							inline: true
-						},
-						{
-							name: 'Win/Loss',
-							value: await convertMatchHistoryToEmbed(userHistoryData.winLoss),
-							inline: true
-						},
-						{
-							name: 'MMR gain/loss',
-							value: await convertMatchHistoryToEmbed(userHistoryData.mmrGainLoss),
-							inline: true
-						},)
-					.addField('How to view Match History',
-						'In order to view your match, click on the link below and log in. Then,' +
-						'click on any of your matches and replace the FIRST set of numbers with your match ID.', false)
-					.addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/', false)
+				let historyEmbed = convertMatchHistoryToEmbed(message.member.displayName, userHistoryData)
 
 				message.channel.send(historyEmbed)
+
 				break
 			case 'epic':
 				message.channel.send('epic');
+				break
+			case "link":
+				updateMatchID(args[0], args[1])
 				break
 			case 'rank':
 				message.react('👑');
@@ -343,6 +308,7 @@ client.on("message", async (message) => {
 						message.channel.send('Are you fucking retarded? Learn to spell a role: top, jgl, mid, adc or sup.')
 					}
 				}
+				break
         case 'champion':
                 switch (args.length) {
                     case 1:
@@ -469,7 +435,8 @@ client.on("clickButton", async (button) => {
 						let msg = getMatchMessageEmbed(current_match, player_states, true)
 						await button.channel.send(`||${msg.msg}||`, msg.embed)
 						match_playing = true
-						match_message.delete()
+
+						await match_message.delete()
 
 					}
 				}
@@ -529,7 +496,12 @@ client.on("clickButton", async (button) => {
 			break
 	}
 
-	button.reply.defer()
+	try {
+		await button.reply.defer()
+	} catch (error) {
+		console.log(`Error interacting with button '${button.id}'`)
+	}
+	
 
 })
 
