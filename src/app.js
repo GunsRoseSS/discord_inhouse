@@ -1,33 +1,45 @@
 import mongoose from "mongoose"
 
 import dotenv from "dotenv"
+
 dotenv.config()
 
-import { Client, MessageEmbed } from "discord.js"
+import {Client, MessageEmbed} from "discord.js"
 
 const client = new Client()
 
 import EasyEmbedPages from 'easy-embed-pages'
 
-import disbut from "discord-buttons"
+import disbut, {MessageButton} from "discord-buttons"
+
 disbut(client)
 
-import {createUser, getUser,getUsers, getUserMatchHistory} from "./interface/user.js"
-import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, getQueue} from "./interface/queue.js"
-import { findMatch } from "./interface/matchmaking.js"
+import {
+    createUser,
+    getUser,
+    getUsers,
+    deleteUsers,
+    getUserMatchHistory,
+    getUserChampionStats
+} from "./interface/user.js"
 
-import {formatRoles, formatUsers, formatChampions} from "./helpers/format.js"
+import {addToQueue, clearQueue, playersInQueue, getQueueEmbed} from "./interface/queue.js"
+import {findMatch} from "./interface/matchmaking.js"
+
+import {checkPositive, formatChampions, formatRoles, formatUsers} from "./helpers/format.js"
+
 
 import { getMatchMessageEmbed,getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide } from "./interface/match.js"
 
 import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData} from "./interface/games.js";
 import {
-	allRoleRanking,
-	embedPlayerRanks,
-	embedRankingPages,
-	getPlayerRanking, getRoleRanking,
-	updateRoleRanking
+    allRoleRanking,
+    embedPlayerRanks,
+    embedRankingPages,
+    getPlayerRanking, getRoleRanking,
+    updateRoleRanking
 } from "./interface/ranking.js";
+import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js";
 
 const admins = ["278604461436567552"]
 
@@ -331,6 +343,113 @@ client.on("message", async (message) => {
 						message.channel.send('Are you fucking retarded? Learn to spell a role: top, jgl, mid, adc or sup.')
 					}
 				}
+        case 'champion':
+                switch (args.length) {
+                    case 1:
+                        let champion = formatChampions([args[0]]);
+                        if (champion === []) {
+                            message.channel.send('Have you considered a spelling course? Could not recognise champion.')
+                            break
+                        }
+                        champion = champion[0];
+
+                        const user = message.author.id;
+                        const nickName = message.guild.member(user).displayName;
+                        const champData = await getUserChampionStats(user, champion);
+
+                        if (champData) {
+                            const rankEmbed = new MessageEmbed()
+                                .setTitle(`${champion} stats for ${nickName}`)
+                                .setColor('ab12ef')
+                                .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] @player** to view stats of that player for the champion.')
+                                .setThumbnail(fetchChampionIcon(champion))
+                                .addFields({
+                                        name: "Total MMR gain/loss",
+                                        value: `${checkPositive((champData).mmrDiff)}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: "Win/Loss",
+                                        value: `${(champData).wins}/${(champData).losses}`,
+                                        inline: true
+                                    })
+
+                            message.channel.send(rankEmbed);
+                        } else {
+                            message.channel.send(`You have not played ${champion} before.`)
+                        }
+
+                        break
+                    case 2:
+                        let champion1 = formatChampions([args[0]]);
+                        if (champion1 === []) {
+                            message.channel.send('Have you considered a spelling course? Could not recognise champion.')
+                            break
+                        }
+                        champion1 = champion1[0];
+
+                        if (args[1].toLowerCase() === 'all') {
+                            const playerData = getAllPlayerChampionStats(await getUsers(), champion1);
+
+                            if (playerData) {
+                                const rankEmbed = new MessageEmbed()
+                                    .setTitle(`${champion1} stats for all players`)
+                                    .setColor('ab12ef')
+                                    .setDescription('Type **!champion [champion]** to view your own stats for that champion or **!champion [champion]** to view your own stats for the champion. for the champion.')
+                                    .setThumbnail(fetchChampionIcon(champion1))
+                                    .addFields({
+                                            name: "Player",
+                                            value: championDataToEmbed(playerData, 'nickname'),
+                                            inline: true
+                                        },
+                                        {
+                                            name: "Total MMR gain/loss",
+                                            value: championDataToEmbed(playerData, 'mmr'),
+                                            inline: true
+                                        },
+                                        {
+                                            name: "Win/Loss",
+                                            value: championDataToEmbed(playerData, 'winLoss'),
+                                            inline: true
+                                        })
+
+                                message.channel.send(rankEmbed);
+
+                            } else {
+                                message.channel.send(`No players have played ${champion1} yet.`)
+                            }
+                        } else {
+                            const player = args[1].slice(3, args[1].length - 1);
+                            const nickName = message.guild.member(player).displayName;
+                            const playerData = await getUserChampionStats(player, champion1);
+
+                            if (playerData) {
+                                const rankEmbed = new MessageEmbed()
+                                    .setTitle(`${champion1} stats for ${nickName}`)
+                                    .setColor('ab12ef')
+                                    .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion]** to view your own stats for the champion. for the champion.')
+                                    .setThumbnail(fetchChampionIcon(champion1))
+                                    .addFields({
+                                            name: "Total MMR gain/loss",
+                                            value: `${checkPositive((playerData).mmrDiff)}`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: "Win/Loss",
+                                            value: `${(playerData).wins}/${(playerData).losses}`,
+                                            inline: true
+                                        })
+
+                                message.channel.send(rankEmbed);
+
+                            } else {
+                                message.channel.send(`This player hasn't played ${champion1} yet.`)
+                            }
+                        }
+                        break
+                    default:
+                        message.channel.send('You messed up the command, sunshine. !champion [champion]');
+                }
 
 		}
 	}
@@ -411,6 +530,7 @@ client.on("clickButton", async (button) => {
 	}
 
 	button.reply.defer()
+
 })
 
 mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin`, {user: process.env.DB_USER, pass: process.env.DB_PASS, useNewUrlParser: true, useUnifiedTopology: true}).then(() => {

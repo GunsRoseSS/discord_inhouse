@@ -3,9 +3,10 @@ import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js";
 import { getUserElo } from "./user.js";
 
 import { MessageEmbed } from "discord.js"
-import {MessageButton} from "discord-buttons"
 
 import { calculateNewElo } from "./matchup.js";
+
+import {checkPositive} from "../helpers/format.js";
 
 // import * as https from "node/https";
 //
@@ -39,19 +40,19 @@ import { calculateNewElo } from "./matchup.js";
 
 /*
     let newGame = new Game({
-            matchID: 5372475920,
-            players: [
-                {
-                    id: '139392064386367489',
-                    team: 'red',
-                    role: 'top',
-                    champion: 'poppy',
-                    previousElo: 550,
-                    afterGameElo: 570
-                }
-            ],
-            winner: 'red',
-            date: new Date().setHours(0, 0, 0, 0)
+        matchID: 5372475920,
+        players: [
+            {
+                id: '139392064386367489',
+                team: 'red',
+                role: 'top',
+                champion: 'poppy',
+                previousElo: 550,
+                afterGameElo: 570
+            }
+        ],
+        winner: 'red',
+        date: new Date().setHours(0, 0, 0, 0)
     })
 
     */
@@ -163,13 +164,15 @@ export const getMatchHistoryData = async (matches, userID) => {
         let matchData = await getGameByMatchID(match);
         dates.push(matchData.date);
         for (let player of matchData.players) {
-            if (player.id == userID){
+            if (player.id == userID) {
                 roles.push(player.role);
                 champions.push(player.champion);
                 mmrGainLoss.push(player.afterGameElo - player.previousElo)
-                if (player.team === match.winner){
+                if (player.team === match.winner) {
                     winLoss.push('win');
-                } else {winLoss.push('loss')}
+                } else {
+                    winLoss.push('loss')
+                }
                 break //for efficiency
             }
         }
@@ -191,7 +194,7 @@ export const convertMatchHistoryToEmbed = async (values) => {
         switch (typeof values[index]) {
             // TODO: ADD EMOJIS TO ROLES AND WIN/LOSS
             case 'string':
-                if (isNaN(values[index])){
+                if (isNaN(values[index])) {
                     embedString = embedString + values[index].toUpperCase() + '\n';
                 } else {
                     let numberEmoji = emojiNumberSelector(parseInt(index) + 1);
@@ -199,9 +202,8 @@ export const convertMatchHistoryToEmbed = async (values) => {
                 }
                 break
             case 'number':
-                if (0 < values[index]){
-                    embedString = embedString + '+' + values[index].toString() + '\n';
-                }
+                embedString = embedString + '+' + checkPositive(values[index]).toString() + '\n';
+
                 break
             default:
                 embedString = embedString + values[index].toDateString() + '\n';
@@ -214,7 +216,7 @@ export const convertMatchHistoryToEmbed = async (values) => {
         }
     }
 
-    if (embedString === ''){
+    if (embedString === '') {
         embedString = "No games found"
     }
     return embedString

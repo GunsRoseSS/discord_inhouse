@@ -266,3 +266,12 @@ export const formatChampions = (champions) => {
 		return out
 	}, [])
 }
+
+export const checkPositive = (number) => {
+	let convertedNumber = parseInt(number);
+	if (convertedNumber > 0) {
+		return '+' + convertedNumber
+	} else {
+		return convertedNumber
+	}
+}

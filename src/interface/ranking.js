@@ -334,7 +334,7 @@ export const embedAllRoleRanks = (ranks, type) => {
                     embedString = embedString + "<@" + ranks[rank][0] + ">" + '\n'
                     break
                 case 'playerRole':
-                    embedString = embedString + ranks[rank].playerID + '\n'
+                    embedString = embedString + "<@" + ranks[rank].playerID + ">" + '\n'
                     break
             }
         }

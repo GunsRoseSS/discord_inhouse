@@ -92,3 +92,15 @@ export const getUserMatchHistory = async(id) => {
 
 	return user.matchHistory
 }
+
+export const getUserChampionStats = async (userID, champion) => {
+	const user = await getUser(userID);
+
+	for (let champ of user.championStats){
+		if (champ.name === champion){
+			return champ
+		}
+	}
+
+	return null
+}
