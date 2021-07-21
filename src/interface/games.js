@@ -153,6 +153,10 @@ export const getGameByMatchID = async (matchID) => {
     return Game.findOne({matchID: matchID})
 }
 
+export const getAllGames = async () => {
+    return Game.find()
+}
+
 export const getMatchHistoryData = async (matches, userID) => {
     let dates = [],
         roles = [],

@@ -4,7 +4,7 @@ import dotenv from "dotenv"
 
 dotenv.config()
 
-import {Client, MessageEmbed} from "discord.js"
+import {Client, MessageAttachment, MessageEmbed} from "discord.js"
 
 const client = new Client()
 
@@ -31,7 +31,13 @@ import {checkPositive, formatChampions, formatRoles, formatUsers} from "./helper
 
 import {getMatchMessageEmbed, getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide} from "./interface/match.js"
 
-import {convertMatchHistoryToEmbed, createGame, getGameEmbed, getMatchHistoryData} from "./interface/games.js";
+import {
+    convertMatchHistoryToEmbed,
+    createGame,
+    getGameEmbed,
+    getAllGames,
+    getMatchHistoryData
+} from "./interface/games.js";
 import {
     allRoleRanking,
     embedPlayerRanks,
@@ -41,6 +47,8 @@ import {
 } from "./interface/ranking.js";
 import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js";
 import {convertHelpToEmbed} from "./interface/help.js";
+import {generateGraph} from "./interface/graph.js";
+import fs from "fs";
 
 const admins = ["278604461436567552"]
 
@@ -212,53 +220,53 @@ client.on("message", async (message) => {
             }
                 break
             case 'past':
-            case 'history':
-                message.react('📖')
-
-                let userHistoryData = await getMatchHistoryData(await getUserMatchHistory(message.author.id), message.author.id);
-
-                console.log(userHistoryData)
-
-                const historyEmbed = new MessageEmbed()
-                    .setTitle(`:book: Match history for ${message.member.displayName} :book:`)
-                    .setColor('0099ff')
-                    .addFields({
-                            name: 'Match ID',
-                            value: await convertMatchHistoryToEmbed(userHistoryData.matches),
-                            inline: true
-                        },
-                        {
-                            name: 'Date',
-                            value: await convertMatchHistoryToEmbed(userHistoryData.dates),
-                            inline: true
-                        },
-                        {
-                            name: 'Role',
-                            value: await convertMatchHistoryToEmbed(userHistoryData.roles),
-                            inline: true
-                        },
-                        {
-                            name: 'Champion',
-                            value: await convertMatchHistoryToEmbed(userHistoryData.champions),
-                            inline: true
-                        },
-                        {
-                            name: 'Win/Loss',
-                            value: await convertMatchHistoryToEmbed(userHistoryData.winLoss),
-                            inline: true
-                        },
-                        {
-                            name: 'MMR gain/loss',
-                            value: await convertMatchHistoryToEmbed(userHistoryData.mmrGainLoss),
-                            inline: true
-                        },)
-                    .addField('How to view Match History',
-                        'In order to view your match, click on the link below and log in. Then,' +
-                        'click on any of your matches and replace the FIRST set of numbers with your match ID.', false)
-                    .addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/', false)
-
-                message.channel.send(historyEmbed)
-                break
+            // case 'history':
+            //     message.react('📖')
+            //
+            //     let userHistoryData = await getMatchHistoryData(await getUserMatchHistory(message.author.id), message.author.id);
+            //
+            //     console.log(userHistoryData)
+            //
+            //     const historyEmbed = new MessageEmbed()
+            //         .setTitle(`:book: Match history for ${message.member.displayName} :book:`)
+            //         .setColor('0099ff')
+            //         .addFields({
+            //                 name: 'Match ID',
+            //                 value: await convertMatchHistoryToEmbed(userHistoryData.matches),
+            //                 inline: true
+            //             },
+            //             {
+            //                 name: 'Date',
+            //                 value: await convertMatchHistoryToEmbed(userHistoryData.dates),
+            //                 inline: true
+            //             },
+            //             {
+            //                 name: 'Role',
+            //                 value: await convertMatchHistoryToEmbed(userHistoryData.roles),
+            //                 inline: true
+            //             },
+            //             {
+            //                 name: 'Champion',
+            //                 value: await convertMatchHistoryToEmbed(userHistoryData.champions),
+            //                 inline: true
+            //             },
+            //             {
+            //                 name: 'Win/Loss',
+            //                 value: await convertMatchHistoryToEmbed(userHistoryData.winLoss),
+            //                 inline: true
+            //             },
+            //             {
+            //                 name: 'MMR gain/loss',
+            //                 value: await convertMatchHistoryToEmbed(userHistoryData.mmrGainLoss),
+            //                 inline: true
+            //             },)
+            //         .addField('How to view Match History',
+            //             'In order to view your match, click on the link below and log in. Then,' +
+            //             'click on any of your matches and replace the FIRST set of numbers with your match ID.', false)
+            //         .addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/', false)
+            //
+            //     message.channel.send(historyEmbed)
+            //     break
             case 'epic':
                 message.channel.send('epic');
                 break
@@ -475,7 +483,7 @@ client.on("message", async (message) => {
                 const helpEmbed = new EasyEmbedPages(message.channel, {
                     title: ':question: Help page :question;',
                     color: 'ffffff',
-                    footer: "Discord embed layouts are cancer so the help page looks like shit :////",
+                    footer: "Note: Some commands could be restricted by your server permissions.",
                     allowStop: true,
                     time: 300000,
                     ratelimit: 1500,
@@ -501,7 +509,56 @@ client.on("message", async (message) => {
                     author: message.author
                 })
                 break
+            case 'changeimg':
+                if (message.member.hasPermission('ADMINISTRATOR')){
+                    let image = message.attachments.first().url;
+                    if (image) {
+                        client.user.setAvatar(image);
+                        message.channel.send('Accepted: Please wait a moment')
+                    } else {
+                        message.channel.send('Please attach an image.')
+                    }
+                } else {
+                    message.channel.send('You are not authorized to use this command.')
+                }
 
+                break
+            case 'graph':
+            case 'mmr_history':
+            case 'chart':
+                message.react('💹');
+
+                let nickname;
+                let player;
+                if (args.length === 0){
+                    player = message.author.id;
+                    nickname = message.member.displayName;
+                } else {
+                    player = args[0].slice(3, args[0].length - 1);
+                    nickname = message.guild.member(player).displayName;
+                }
+                const playerData = await getUser(player);
+                if (playerData) {
+                    let roles = {
+                        top: playerData.roles.top.wins === 0 && playerData.roles.top.wins,
+                        jgl: playerData.roles.jgl.wins === 0 && playerData.roles.jgl.wins,
+                        mid: playerData.roles.mid.wins === 0 && playerData.roles.mid.wins,
+                        adc: playerData.roles.adc.wins === 0 && playerData.roles.adc.wins,
+                        sup: playerData.roles.sup.wins === 0 && playerData.roles.sup.wins
+                    };
+                    let random = await generateGraph(roles, player, nickname)
+
+                    await message.channel.send({files: [
+                        `${random}.png`
+                        ]});
+
+                    fs.unlink(`${random}.png`, (e) => {
+
+                    })
+                } else {
+                    message.channel.send('User not found in database. They have not played any games (yet)')
+                    break
+                }
         }
     }
 })
