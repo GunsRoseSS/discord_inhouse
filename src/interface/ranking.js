@@ -221,7 +221,7 @@ export const updateRoleRanking = async () => {
         })
     }
 
-    Ranking.deleteMany();
+    await Ranking.deleteMany();
 
     let newRanking = new Ranking({
         roles: {

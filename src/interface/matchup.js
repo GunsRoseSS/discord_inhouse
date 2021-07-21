@@ -46,13 +46,13 @@ export const getMatchups = async (role,players) => {
 }
 
 export const calculateExpectedOutcome = (elo1, elo2) => {
-	return 1 / (1 + Math.pow(10, (elo2 - elo1)/400))
+	return 1 / (1 + Math.pow(10, (elo2 - elo1)/500))
 }
 
 export const calculateNewElo = (elo1, elo2, win) => {
 	let outcome = calculateExpectedOutcome(elo1, elo2)
 	win = win ? 1 : 0;
 
-	return elo1 + (32 * (win - outcome))
+	return elo1 + Math.floor((40 * (win - outcome)))
 }
 

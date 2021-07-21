@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 
 const gameSchema = mongoose.Schema({
+    _id: String,
     matchID: Number, //note: this is the riot Match ID, not the DB ID.
     players: [{
         id: String, //discord id fetch from player models
