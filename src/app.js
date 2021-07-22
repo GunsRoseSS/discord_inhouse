@@ -276,6 +276,7 @@ client.on("message", async (message) => {
 			case 'epic':
 				message.channel.send('epic');
 				break
+			case 'matchid':
 			case "link":
 				updateMatchID(args[0], args[1])
 				break
@@ -490,7 +491,6 @@ client.on("message", async (message) => {
                 message.react('❓');
 
                 const helpEmbed = new EasyEmbedPages(message.channel, {
-                    title: ':question: Help page :question;',
                     color: 'ffffff',
                     footer: "Note: Some commands could be restricted by your server permissions.",
                     allowStop: true,
@@ -498,17 +498,25 @@ client.on("message", async (message) => {
                     ratelimit: 1500,
                     pages: [
                         {
-                            description: convertHelpToEmbed(1)
+							title: ':question: Pre-game commands :question;',
+							description: convertHelpToEmbed(1)
                         },
                         {
-                            description: convertHelpToEmbed(2)
+							title: ':question: Post-game commands :question;',
+							description: convertHelpToEmbed(2)
                         },
                         {
-                            description: convertHelpToEmbed(3)
+							title: ':question: Statistical commands :question;',
+							description: convertHelpToEmbed(3)
                         },
                         {
-                            description: convertHelpToEmbed(4)
+							title: ':question: Match history related commands :question;',
+							description: convertHelpToEmbed(4)
                         },
+						{
+							title: ':question: Misc. :question;',
+							description: convertHelpToEmbed(5)
+						},
                     ]
                 })
 
