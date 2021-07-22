@@ -1,11 +1,65 @@
+let legend = "Legend:\n[] = argument\n? = optional argument\n\n"
 
-
-const helpData = [//this way it's easier to edit help in case we need to update it.
+const misc = [//this way it's easier to edit help in case we need to update it.
     {
         name: '!help',
         aliases: '!commands',
         description: 'Displays all of the current accepted commands and their functionality.'
     },
+    {
+        name: '!epic',
+        aliases: '-',
+        description: 'epic'
+    },
+    {
+        name: '!changeimg {image attachment}',
+        aliases: '-',
+        description: 'Changes the image of the bot. It might take a while to process.'
+    },
+]
+
+const preGame = [
+    {
+        name: '!queue [Role #1] ?[Role #2] ...?[Role #5]',
+        aliases: '-',
+        description: 'Inserts you into the queue for the next game. You can select multiple roles in one command.'
+    },
+    {
+        name: '!leave',
+        aliases: '-',
+        description: 'Removes you from all roles in the queue.'
+    },
+    {
+        name: '!lineup [Top] [Jungle] [Mid] [ADC] [Support]',
+        aliases: '!team',
+        description: 'Inserts the lineup for your team into the match. Lineup can be changed by using the command again. A game cannot start before both lineups are inserted.'
+    },
+    {
+        name: '!start',
+        aliases: '-',
+        description: 'Starts the matchmaking process. A minimum of 10 people in the queue are required to start a game.'
+    }
+]
+
+const postGame = [
+    {
+        name: '!loss',
+        aliases: '!lose',
+        description: 'Use this command after a match to indicate that your team has lost the match. 6 votes are necessary to confirm the loss.'
+    },
+    {
+        name: '!win',
+        aliases: '!won',
+        description: 'Use this command after a match to indicate that your team has win the match. 6 votes are necessary to confirm the win.'
+    },
+    {
+        name: '!link [gameID]',
+        aliases: '!matchid',
+        description: 'Links the matchID that is displayed in the LoL client to the last game that was played.'
+    }
+]
+
+const stats = [
     {
         name: '!champion [champion] ?[@player]/?[all]',
         aliases: '!champ',
@@ -20,58 +74,45 @@ const helpData = [//this way it's easier to edit help in case we need to update 
         name: '!rank ?[@player]',
         aliases: '-',
         description: "Displays your current rank for all your roles. You can also view another [@player]'s rank."
-    },
-    {
-        name: '!epic',
-        aliases: '-',
-        description: 'epic'
-    },
+    }
+]
+
+const history = [
     {
         name: '!history',
         aliases: '!past',
         description: 'Displays the history of your previous games.'
     },
     {
-        name: '!lineup [Top] [Jungle] [Mid] [ADC] [Support]',
-        aliases: '!team',
-        description: 'Inserts the lineup for your team into the match. Lineup can be changed by using the command again. A game cannot start before both lineups are inserted.'
-    },
-    {
-        name: '!loss',
-        aliases: '!lose',
-        description: 'Use this command after a match to indicate that your team has lost the match. 6 votes are necessary to confirm the loss.'
-    },
-    {
-        name: '!win',
-        aliases: '!won',
-        description: 'Use this command after a match to indicate that your team has win the match. 6 votes are necessary to confirm the win.'
-    },
-    {
-        name: '!queue [Role #1] ?[Role #2] ...?[Role #5]',
+        name: '!view [gameID]',
         aliases: '-',
-        description: 'Inserts you into the queue for the next game. You can select multiple roles in one command.'
+        description: 'Shows game stats for a previous game with the [gameID] that you specified after the game ended.'
     },
     {
-        name: '!start',
-        aliases: '-',
-        description: 'Starts the matchmaking process. A minimum of 10 people in the queue are required to start a game.'
-    },
+        name: '!graph ?[@player]',
+        aliases: '!chart, !mmr_history',
+        description: "Displays a graph of your or another [@player]'s mmr progression over the past month."
+    }
 ]
+
 
 export const convertHelpToEmbed = (page) => {
     let helpArray = [];
     switch (page){
         case 1:
-            helpArray.push(helpData[0], helpData[1], helpData[2]);
+            helpArray = preGame
             break
         case 2:
-            helpArray.push(helpData[3], helpData[4], helpData[5]);
+            helpArray = postGame
             break
         case 3:
-            helpArray.push(helpData[6], helpData[7], helpData[8]);
+            helpArray = stats
             break
         case 4:
-            helpArray.push(helpData[9], helpData[10]);
+            helpArray = history
+            break
+        case 5:
+            helpArray = misc
             break
     }
 
@@ -80,5 +121,5 @@ export const convertHelpToEmbed = (page) => {
         embedString = embedString + '```COMMAND:\t' + command.name + '\nALIASES:\t' + command.aliases + '\n\n' + command.description + '```';
 
     }
-    return embedString
+    return legend + embedString
 }
