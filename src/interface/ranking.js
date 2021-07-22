@@ -1,7 +1,7 @@
 import {getUsers} from "./user.js";
 import {quickSortPlayers} from "../helpers/sort.js";
 import Ranking from "../models/ranking.js";
-import {emojiNumberSelector} from "../helpers/emoji.js";
+import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js";
 
 
 export const getPlayerRanking = async (playerID) => {
@@ -333,19 +333,19 @@ export const embedPlayerRanks = (ranks, type) => {
     switch (type) {
         case 'rank':
             if (!skipRole.top){
-                embedString = embedString + "Top " + emojiNumberSelector(ranks.top.place) + '\n';
+                embedString = embedString + getRoleEmoji('top') + "   " + emojiNumberSelector(ranks.top.place) + '\n';
             }
             if (!skipRole.jgl){
-                embedString = embedString + "Jungle " + emojiNumberSelector(ranks.jgl.place) + '\n';
+                embedString = embedString + getRoleEmoji('jgl') + "   " + emojiNumberSelector(ranks.jgl.place) + '\n';
             }
             if (!skipRole.mid){
-                embedString = embedString + "Mid " + emojiNumberSelector(ranks.mid.place) + '\n';
+                embedString = embedString + getRoleEmoji('mid') + "   " + emojiNumberSelector(ranks.mid.place) + '\n';
             }
             if (!skipRole.adc){
-                embedString = embedString + "ADC " + emojiNumberSelector(ranks.adc.place) + '\n';
+                embedString = embedString + getRoleEmoji('adc') + "   " + emojiNumberSelector(ranks.adc.place) + '\n';
             }
             if (!skipRole.sup){
-                embedString = embedString + "Support " + emojiNumberSelector(ranks.sup.place) + '\n';
+                embedString = embedString + getRoleEmoji('sup') + "   " + emojiNumberSelector(ranks.sup.place) + '\n';
             }
 
             return embedString
@@ -397,7 +397,7 @@ export const embedAllRoleRanks = (ranks, type) => {
             switch (type) {
                 case 'rank':
                     let rankNumber = parseInt(ranks[0]) * 10 + parseInt(rank);
-                    embedString = embedString + emojiNumberSelector(rankNumber) + ranks[rank][1] + '\n';
+                    embedString = embedString + emojiNumberSelector(rankNumber) + getRoleEmoji(ranks[rank][1].toLowerCase()) + '\n';
                     break
                 case 'justRank':
                     let rankNumber2 = parseInt(ranks[0]) * 10 + parseInt(rank);

@@ -1,12 +1,12 @@
 import Game from "../models/game.js";
-import {getRoleEmoji} from "../helpers/emoji.js";
-import { getUser, getUserElo, getUserMatchHistory } from "./user.js";
+import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js";
+import {getUser, getUserElo, getUserMatchHistory} from "./user.js";
 
-import { MessageEmbed } from "discord.js"
+import {MessageEmbed} from "discord.js"
 
-import { calculateNewElo } from "./matchup.js";
+import {calculateNewElo} from "./matchup.js";
 
-import { updateRoleRanking } from "./ranking.js";
+import {embedAllRoleRanks, updateRoleRanking} from "./ranking.js";
 
 // import * as https from "node/https";
 //
@@ -38,7 +38,7 @@ import { updateRoleRanking } from "./ranking.js";
 // }
 
 const dateOrdinal = (d) => {
-        return d+(31==d||21==d||1==d?"st":22==d||2==d?"nd":23==d||3==d?"rd":"th")
+    return d + (31 == d || 21 == d || 1 == d ? "st" : 22 == d || 2 == d ? "nd" : 23 == d || 3 == d ? "rd" : "th")
 };
 
 const convertToPlayerList = async (game, champs, winner) => {
@@ -47,7 +47,7 @@ const convertToPlayerList = async (game, champs, winner) => {
 
     const roles = ["top", "jgl", "mid", "adc", "sup"]
 
-    for (let i=0;i<game.length;i++) {
+    for (let i = 0; i < game.length; i++) {
         const elo1 = await getUserElo(game[i].player1, roles[i])
         const elo2 = await getUserElo(game[i].player2, roles[i])
 
@@ -78,7 +78,7 @@ export const getGameEmbed = (game) => {
     let msg_red = ""
     let msg_ping = ""
 
-    for (let i=0;i<game.players.length;i++) {
+    for (let i = 0; i < game.players.length; i++) {
         let player = game.players[i]
         let elo_diff = player.afterGameElo - player.previousElo
         if (Math.floor(i / 5) == 0) {
@@ -90,15 +90,15 @@ export const getGameEmbed = (game) => {
     }
 
     let game_embed = new MessageEmbed()
-    .setTitle(`Match ${game._id} results`)
+        .setTitle(`Match ${game._id} results`)
 
     game_embed.addField("BLUE", msg_blue, true)
-	game_embed.addField("RED", msg_red, true)
+    game_embed.addField("RED", msg_red, true)
 
     let date = game.date.toString()
-    let date_p1 = date.substring(0,9)
-    let date_p2 = dateOrdinal(date.substring(9,10))
-    let date_p3 = date.substring(10,15)
+    let date_p1 = date.substring(0, 9)
+    let date_p2 = dateOrdinal(date.substring(9, 10))
+    let date_p3 = date.substring(10, 15)
 
     game_embed.setFooter(`Played on ${date_p1 + date_p2 + date_p3}`)
 
@@ -106,7 +106,7 @@ export const getGameEmbed = (game) => {
 
 }
 
-export const createGame = async (game, champs, winner) => { 
+export const createGame = async (game, champs, winner) => {
 
     let newGame = new Game({
         _id: (await Game.find()).length + 1,
@@ -115,7 +115,7 @@ export const createGame = async (game, champs, winner) => {
         winner: winner,
         date: new Date()
     })
-    
+
     await newGame.save()
 
     for (let player of newGame.players) {
@@ -125,7 +125,7 @@ export const createGame = async (game, champs, winner) => {
         user.roles[player.role].mmr += (player.afterGameElo - player.previousElo)
 
         let location = -1
-        for (let i=0;i<user.championStats.length;i++) {
+        for (let i = 0; i < user.championStats.length; i++) {
             if (user.championStats[i].name === player.champion) {
                 location = i
                 break
@@ -147,8 +147,8 @@ export const createGame = async (game, champs, winner) => {
         }
 
         user.championStats[location].mmrDiff += (player.afterGameElo - player.previousElo)
-        
-        
+
+
         await user.save()
     }
 
@@ -213,30 +213,16 @@ export const getMatchHistoryData = async (id) => {
 }
 
 export const convertMatchHistoryToEmbed = (name, historyData) => {
-    let history_embed = new MessageEmbed()
-    .setTitle(`:book: Match history for ${name} :book:`)
-	.setColor('0099ff')
 
     historyData.roles = historyData.roles.map(role => {
-            switch (role) {
-                case "top":
-                    return "Top"
-                case "jgl":
-                    return "Jungle"
-                case "mid":
-                    return "Middle"
-                case "adc":
-                    return "Adc"
-                case "sup":
-                    return "Support"
-            }
+        return getRoleEmoji(role)
     })
 
     historyData.dates = historyData.dates.map(date => {
         let d = date.toString()
-        let date_p1 = d.substring(0,9)
-        let date_p2 = dateOrdinal(d.substring(9,10))
-        let date_p3 = d.substring(10,15)
+        let date_p1 = d.substring(0, 9)
+        let date_p2 = dateOrdinal(d.substring(9, 10))
+        let date_p3 = d.substring(10, 15)
 
         return date_p1 + date_p2 + date_p3
     })
@@ -245,18 +231,95 @@ export const convertMatchHistoryToEmbed = (name, historyData) => {
         return champ.split(/(?=[A-Z])/).join(" ")
     })
 
+    return paginateHistoryEmbed(historyData)
+}
 
-    history_embed.addField("Match ID", historyData.matches.join("\n"),true)
-    history_embed.addField("Date", historyData.dates.join("\n"), true)
-    history_embed.addField("Role", historyData.roles.join("\n"), true)
-    history_embed.addField("Champion", historyData.champions.join("\n"), true)
-    history_embed.addField("Win/Loss", historyData.winLoss.join("\n"), true)
-    history_embed.addField("MMR gain/loss", historyData.mmrGainLoss.join("\n"), true)
+export const paginateHistoryEmbed = (historyData) => {
+    let pages = [];
 
-    history_embed.addField('How to view Match History',
-						'In order to view your match, click on the link below and log in. Then,' +
-						'click on any of your matches and replace the FIRST set of numbers with your match ID.', false)
-    history_embed.addField('Link', 'https://matchhistory.euw.leagueoflegends.com/en/', false)
+    let done = false;
+    let loopCounter = 0;
 
-    return history_embed
+    while (!done) {
+        let subList = {
+            loop: loopCounter,
+            matches: [],
+            dates: [],
+            roles: [],
+            champions: [],
+            winLoss: [],
+            mmrGainLoss: []
+        }
+        let counter = 0;
+        while (historyData.matches.length !== 0 && counter < 5) {
+            let embedNumber = loopCounter * 5 + counter + 1
+            subList.matches.push(emojiNumberSelector(embedNumber) + ': ' + historyData.matches[0]);
+            subList.dates.push(historyData.dates[0]);
+            subList.roles.push(historyData.roles[0]);
+            subList.champions.push(emojiNumberSelector(embedNumber) + ': ' + historyData.champions[0]);
+            subList.winLoss.push(historyData.winLoss[0]);
+            subList.mmrGainLoss.push(historyData.mmrGainLoss[0]);
+
+            historyData.matches.shift();
+            historyData.dates.shift();
+            historyData.roles.shift();
+            historyData.champions.shift();
+            historyData.winLoss.shift();
+            historyData.mmrGainLoss.shift();
+
+            counter += 1;
+        }
+
+        pages.push({
+            fields: [
+                {
+                    name: 'Match ID',
+                    value: subList.matches.join("\n"),
+                    inline: true
+                },
+                {
+                    name: 'Date',
+                    value: subList.dates.join("\n"),
+                    inline: true
+                },
+                {
+                    name: 'Role',
+                    value: subList.roles.join("\n"),
+                    inline: true
+                },
+                {
+                    name: 'Champion',
+                    value: subList.champions.join("\n"),
+                    inline: true
+                },
+                {
+                    name: 'Win/Loss',
+                    value: subList.winLoss.join("\n"),
+                    inline: true
+                },
+                {
+                    name: 'MMR gain/loss',
+                    value: subList.mmrGainLoss.join("\n"),
+                    inline: true
+                },
+                {
+                    name: 'How to view Match History',
+                    value: 'In order to view your match, click on the link below and log in. Then,' +
+                        'click on any of your matches and replace the FIRST set of numbers with your match ID.',
+                    inline: false
+                },
+                {
+                    name: 'Link',
+                    value: 'https://matchhistory.euw.leagueoflegends.com/en/',
+                    inline: false
+                }
+            ]
+        })
+
+        loopCounter += 1
+        if (historyData.matches.length === 0) {
+            done = true;
+        }
+    }
+    return pages
 }
