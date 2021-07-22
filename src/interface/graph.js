@@ -99,42 +99,21 @@ export const getGraphData = async (playerID) => {
     matchDataArray[3] = interpolateValues(matchDataArray[3]);
     matchDataArray[4] = interpolateValues(matchDataArray[4]);
 
+    let graphSettings = [["Top", "rgb(255,100,86)"], ["Jungle", "#00ffff"], ["Mid", "#ff00ff"], ["Adc", "rgb(255,205,86)"], ["Support", "#00ff00"]]
+
+    let filteredData = []
+
+    for (let i=0;i<matchDataArray.length;i++) {
+        let sorted = [...matchDataArray[i]].sort()
+
+        if (sorted[0] != sorted[sorted.length-1]) {
+            filteredData.push({"label": graphSettings[i][0], "borderColor": graphSettings[i][1], "backgroundColor": "rgba(0,0,0,0)", "data": matchDataArray[i]})
+        }
+    }
+
     return {
         dates: dateArray.reverse(),
-        roleData: [
-            {
-                "label": "Top",
-                "borderColor": "rgb(255,100,86)",
-                "backgroundColor": "rgba(0,0,0,0)",
-                "data": matchDataArray[0]
-            },
-            {
-                "label": "Jungle",
-                "borderColor": "#00ffff",
-                "backgroundColor": "rgba(0,0,0,0)",
-                "data": matchDataArray[1]
-            },
-            {
-                "label": "Mid",
-                "borderColor": "#ff00ff",
-                "backgroundColor": "rgba(0,0,0,0)",
-                "data": matchDataArray[2]
-            },
-            {
-                "label": "Adc",
-                "borderColor": "rgb(255,205,86)",
-                "backgroundColor": "rgba(0,0,0,0)",
-                "data": matchDataArray[3]
-            },
-            {
-                "label": "Sup",
-                "borderColor": "#00ff00",
-                "backgroundColor": "rgba(0,0,0,0)",
-                "data": matchDataArray[4]
-            }
-        ]
-
-
+        roleData: filteredData
     }
 }
 
@@ -179,7 +158,7 @@ export const generateGraph = async (roles, playerID, nickname) => {
         .height(500)
 
     let random = Math.floor(Math.random() * 1000000);
-    console.log(random)
+    
     await line_chart.toFile(`${random}.png`);
 
     return random
