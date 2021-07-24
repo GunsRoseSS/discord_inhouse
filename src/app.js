@@ -130,37 +130,18 @@ client.on("message", async (message) => {
 			case "won":
 				if (match_playing) {
 					if (message.author.id in player_states) {
-						Object.keys(player_states).forEach(player => {
-							player_states[player].state = "none"
-						})
-
-						player_states[message.author.id].state =  "accept"
-						initiator = player_states[message.author.id].user
-						winner = getPlayerSide(current_match, message.author.id)
-						let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
-
-						match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
-
 						if ("RED" in champs && "BLUE" in champs) {
-
+							Object.keys(player_states).forEach(player => {
+								player_states[player].state = "none"
+							})
+	
+							player_states[message.author.id].state =  "accept"
+							initiator = player_states[message.author.id].user
+							winner = getPlayerSide(current_match, message.author.id, ["win", "won"].includes(cmd) ? false : true)
+							let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
+	
+							match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
 						}
-					}			
-				}
-				break
-			case "loss":
-			case "lose":
-				if (match_playing) {
-					if (message.author.id in player_states) {
-						Object.keys(player_states).forEach(player => {
-							player_states[player].state = "none"
-						})
-						
-						player_states[message.author.id].state =  "accept"
-						initiator = player_states[message.author.id].user
-						winner = getPlayerSide(current_match, message.author.id, true)
-						let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
-
-						match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
 					}			
 				}
 				break

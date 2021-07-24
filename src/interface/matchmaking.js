@@ -3,9 +3,16 @@ import {getMatchups} from "./matchup.js"
 
 //If a game is found within these thresholds => return that game
 const OUTCOME_DEVIATION_THRESHOLD = 0.005 //Deviation of game winrate from 50% => 0.005 = 49.5% - 50.5%
-const MATCHUP_DEVIATION_THRESHOLD = 0.15 //Average deviation of matchup winrates from 50% => 0.15 = 35.0% - 65.0%
+const MATCHUP_DEVIATION_THRESHOLD = 0.10 //Average deviation of matchup winrates from 50% => 0.15 = 35.0% - 65.0%
 
-//Find the best match in the current queue
+//0.0, 0.0 => really slow >5000ms, best match
+//0.005, 0.10 => really fast <1000ms, pretty good matching
+//>0.02, >0.15 => fastest <500ms, uneven matching, diminishing speed returns
+
+//Generating role permutations ~250-300ms
+//Bottlenecked by mongo atlas?
+
+//Find the best match using the current queue
 export const findMatch = async () => {
     let role_permutations = await generateRolePermutations()
     
@@ -13,6 +20,8 @@ export const findMatch = async () => {
 
     let complete = false
 
+    //Check every posible game
+    //if a player is in more than 1 role, the game is dropped
     role_permutations["top"].forEach((t) => {
         if (complete) return
         role_permutations["jgl"].forEach((j) => {

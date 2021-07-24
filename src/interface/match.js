@@ -6,7 +6,7 @@ import { getRoleEmoji, getStateEmoji } from "../helpers/emoji.js"
 export const getMatchMessageEmbed = (match, player_states, started = false) => {
     let match_embed = new MessageEmbed()
 		.setTitle(!started ? "Match found" : "Match accepted")
-		.setDescription(`Expected outcome: ${(match.expected_outcome  * 100.0000).toFixed(2)}% ${(match.expected_outcome >= 0.5000) ? "BLUE" :"RED"} \n
+		.setDescription(`Expected outcome: ${(match.expected_outcome >= 0.5000) ? (match.expected_outcome  * 100.0000).toFixed(2) + "% BLUE" :((1.0000 - match.expected_outcome)  * 100.0000).toFixed(2) + "% RED"} \n
 		Average matchup deviation: ${(match.avg_matchup_deviation * 100.0000).toFixed(2)}% \n\n`)
 		.setFooter("\u2800".repeat(50))
 

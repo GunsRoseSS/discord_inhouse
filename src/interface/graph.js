@@ -42,6 +42,9 @@ export const generateGraph = async (id, nickname) => {
         "type": "line",
         "data": {"labels": dates,"datasets": graphData},
         "options": {
+            "layout": {
+                "padding": "10"
+            },
             "legend": {
                 "labels": {
                     "fontColor": textColour

@@ -24,6 +24,8 @@ export const formatRoles = (roles) => {
 			case "support":
 				out.push("sup")
 				break
+			case "all":
+				out.push("top", "jgl", "mid", "adc", "sup")
 		}
 		return out
 	}, [])
@@ -257,8 +259,6 @@ export const formatChampions = (champions) => {
 				case "Black1":
 					temp = ("Ekko")
 					break
-				default:
-					temp = champion
 			}
 			if (temp && !out.includes(temp)) {
 				out.push(temp)
