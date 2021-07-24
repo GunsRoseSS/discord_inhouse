@@ -29,25 +29,36 @@ export const generateGraph = async (id, nickname) => {
 
     for (let i=0;i<userData.length;i++) {
         if (userData[i].length > 0) {
-            graphData.push({"label": graphSettings[i][0], "borderColor": graphSettings[i][1], "backgroundColor": "rgba(0,0,0,0)", "data": userData[i]})
+            graphData.push({"label": graphSettings[i][0], "borderColor": graphSettings[i][1], "backgroundColor": graphSettings[i][1],"fill": false, "data": userData[i]})
 
             minValue = Math.min(minValue, Math.min(...userData[i]))
             maxValue = Math.max(maxValue, Math.max(...userData[i]))
         }
     }
 
+    const textColour = "#e5e5e5"
+
     const line_chart = ChartJSImage().chart({
         "type": "line",
         "data": {"labels": dates,"datasets": graphData},
         "options": {
-            "title": {"display": true,"text": `MMR variation for ${nickname} this month`},
+            "legend": {
+                "labels": {
+                    "fontColor": textColour
+                }  
+            },
+            "title": {"display": true,"text": `MMR variation for ${nickname} this month`, "fontColor": textColour},
             "scales": {
                 "xAxes": [
                     {
                         "scaleLabel": {
                             "display": true,
                             "labelString": "Day",
+                            "fontColor": textColour
 
+                        },
+                        "ticks": {
+                            "fontColor": textColour
                         }
                     }
                 ],
@@ -56,10 +67,13 @@ export const generateGraph = async (id, nickname) => {
                         "stacked": false,
                         "scaleLabel": {
                             "display": true,
-                            "labelString": "MMR"
+                            "labelString": "MMR",
+                            "fontColor": textColour
                         },
                         "ticks": {
-                            "min": Math.floor((minValue - ((maxValue - minValue) * 0.2)) / 10.0) * 10
+                            "min": Math.floor((minValue - ((maxValue - minValue) * 0.2)) / 10.0) * 10,
+                            "max": Math.ceil((maxValue + ((maxValue - minValue) * 0.2))/ 10.0) * 10,
+                            "fontColor": textColour
                         }
                     }
                 ]
