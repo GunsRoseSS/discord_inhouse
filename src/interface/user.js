@@ -90,7 +90,11 @@ export const deleteUsers = async() => {
 export const getUserMatchHistory = async(id) => {
 	const user = await getUser(id);
 
-	return user.matchHistory
+	if (user) {
+		return user.matchHistory
+	}
+
+	
 }
 
 export const getUserChampionStats = async (userID, champion) => {

@@ -275,3 +275,20 @@ export const checkPositive = (number) => {
 		return convertedNumber
 	}
 }
+
+const dateOrdinal = (d) => {
+	return d+(31==d||21==d||1==d?"st":22==d||2==d?"nd":23==d||3==d?"rd":"th")
+};
+
+export const formatDate = (date, shorthand = false) => {
+	if (shorthand) {
+		return (date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear().toString().substring(2,4))
+	} else {
+		let d = date.toString()
+    	let date_p1 = d.substring(0,9)
+    	let date_p2 = dateOrdinal(d.substring(9,10))
+    	let date_p3 = d.substring(10,15)
+
+		return date_p1 + date_p2 + date_p3
+	}
+}

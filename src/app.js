@@ -12,8 +12,6 @@ import EasyEmbedPages from 'easy-embed-pages'
 
 import disbut, {MessageButton} from "discord-buttons"
 
-import Game from "./models/game.js"
-
 disbut(client)
 
 import {
@@ -111,28 +109,6 @@ client.on("message", async (message) => {
 					message.channel.send(await getQueueEmbed())
 				}
 				break
-			case "test":
-				{
-					let id = "278604461436567552"
-
-					let matches = await getUserMatchHistory(id)
-
-					matches = matches.reduce((out, match) => {
-						return [...out,{_id: match}]
-					}, [])
-
-					let games = await Game.find({$or : matches})
-
-					games = games.reduce((out, game) => {
-						let player = game.players.find(element => element.id == id)
-						return [...out, {date: game.date, role: player.role, previousElo: player.previousElo, afterGameElo: player.afterGameElo}]
-					}, [])
-
-					//games = [{date, role, previousElo, afterGameElo},{date, role, previousElo, afterGameElo}]
-
-
-				}	
-			break
 			case "view":
 				{
 					let game = await getGameByID(args[0])
@@ -537,6 +513,32 @@ client.on("message", async (message) => {
             case 'chart':
                 message.react('💹');
 
+				let id;
+				let nickname;
+
+				if (args.length == 0) {
+					id = message.author.id
+					nickname = message.member.displayName
+				} else {
+					id = args[0].slice(3, args[0].length - 1)
+					nickname = message.guild.member(id).displayName
+				}
+
+				let img = await generateGraph(id, nickname)
+
+				if (img != "error") {
+					await message.channel.send({files: [
+						`${img}.png`
+					]});
+	
+					fs.unlink(`${img}.png`, (e) => {})
+				} else {
+					message.channel.send("Something went wrong! Does this user exist?")
+				}
+
+				break
+
+				/*
                 let nickname;
                 let player;
                 if (args.length === 0){
@@ -547,6 +549,7 @@ client.on("message", async (message) => {
                     nickname = message.guild.member(player).displayName;
                 }
                 const playerData = await getUser(player);
+				
                 if (playerData) {
                     let roles = {
                         top: playerData.roles.top.wins === 0 && playerData.roles.top.wins,
@@ -568,6 +571,8 @@ client.on("message", async (message) => {
                     message.channel.send('User not found in database. They have not played any games (yet)')
                     break
                 }
+
+				*/
         }
     }
 })
