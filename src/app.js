@@ -14,8 +14,8 @@ import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from 
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
-
 import {checkPositive, formatChampions, formatRoles} from "./helpers/format.js";
+import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
 
 dotenv.config()
 
@@ -66,18 +66,20 @@ client.on("message", async (message) => {
 					}
 				}
 
-				let user = await getUser(user_id)
+				let user = await getUser(user_id);
 
 				if (!user) {
-					user = await createUser(user_id)
-					await updateRoleRanking()
+					user = await createUser(user_id);
+					await updateRoleRanking();
 				}
 
-				let roles = formatRoles(args)
+				let roles = formatRoles(args);
 
 				if (roles.length != 0) {
-					await addToQueue(user_id, roles)
-					message.channel.send(await getQueueEmbed())
+					await addToQueue(user_id, roles);
+					message.channel.send(await getQueueEmbed());
+				} else {
+					message.channel.send('Something went wrong while trying to add you to the queue. Did you spell your roles correctly?')
 				}
 				
 				break
@@ -185,7 +187,10 @@ client.on("message", async (message) => {
                     {
                         title: `:book: Match history for ${message.member.displayName} :book:`,
                         color: '0099ff',
-                        pages: pages
+                        pages: pages,
+						allowStop: true,
+						time: 300000,
+						ratelimit: 1500
                     })
 
                 historyEmbed.start({
@@ -317,7 +322,7 @@ client.on("message", async (message) => {
                             const rankEmbed = new MessageEmbed()
                                 .setTitle(`${champion} stats for ${nickName}`)
                                 .setColor('ab12ef')
-                                .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] @player** to view stats of that player for the champion.')
+                                .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.')
                                 .setThumbnail(fetchChampionIcon(champion))
                                 .addFields({
                                         name: "Total MMR gain/loss",
@@ -351,7 +356,7 @@ client.on("message", async (message) => {
                                 const rankEmbed = new MessageEmbed()
                                     .setTitle(`${champion1} stats for all players`)
                                     .setColor('ab12ef')
-                                    .setDescription('Type **!champion [champion]** to view your own stats for that champion or **!champion [champion]** to view your own stats for the champion. for the champion.')
+                                    .setDescription('Type **!champion [champion]** to view your own stats for that champion or **!champion [champion] [@player]** to view stats of the champion for another player.')
                                     .setThumbnail(fetchChampionIcon(champion1))
                                     .addFields({
                                             name: "Player",
@@ -407,6 +412,42 @@ client.on("message", async (message) => {
                         message.channel.send('You messed up the command, sunshine. !champion [champion]');
                 }
                 break
+			case 'champs':
+			case 'champions':
+				let user1, nickName1, champData;
+				if (args.length < 1){
+					user1 = message.author.id;
+				} else {
+					user1 = args[0].slice(3, args[0].length - 1);
+				}
+				nickName1 = message.guild.member(user1).displayName;
+				champData = await getUserChampionStats(user1);
+
+				if (champData){
+					const rankEmbed = new MessageEmbed()
+						.setTitle(`All champion stats for ${nickName1}`)
+						.setColor('6678B8')
+						.setDescription("Type **!champions [@player]** to view another player's champion stats")
+						.addFields({
+								name: "Champion",
+								value: championDataToEmbed(champData, 'champion'),
+								inline: true
+							},{
+								name: "Total MMR gain/loss",
+								value: championDataToEmbed(champData, 'mmr'),
+								inline: true
+							},
+							{
+								name: "Win/Loss",
+								value: championDataToEmbed(champData, 'winLoss'),
+								inline: true
+							})
+
+					message.channel.send(rankEmbed);
+				} else {
+					message.channel.send('You have/This player has not played any champions yet')
+				}
+				break
             case 'help':
             case 'commands':
                 message.react('❓');
@@ -480,7 +521,7 @@ client.on("message", async (message) => {
 				        if (img != "error") {
 					        await message.channel.send({files: [`${img}`]})
                             fs.unlink(`${img}`, (e) => {})
-                        }			    
+                        }
 
                         break
                     }
@@ -497,6 +538,34 @@ client.on("message", async (message) => {
 				} else {
 					message.channel.send("Something went wrong! Does this user exist?")
 				}
+
+				break
+			case 'teammates':
+				message.react('🤤');
+				let user2, nickName2, teammateData; //im such an inbred for doing it like this
+				if (args.length < 1){
+					user2 = message.author.id;
+				} else {
+					user2 = args[0].slice(3, args[0].length - 1);
+				}
+				nickName2 = message.guild.member(user2).displayName;
+				teammateData = await getTeammateStats(user2);
+				let pages2 = await convertTeammateDataToEmbed(teammateData);
+				let teammateEmbed = new EasyEmbedPages(message.channel,
+					{
+						title: `:drool: Teammate stats for ${nickName2} :drool:`,
+						description: 'See your best and worst teammates!',
+						color: 'AFFDD7',
+						pages: pages2,
+						allowStop: true,
+						time: 300000,
+						ratelimit: 1500
+					})
+
+				teammateEmbed.start({
+					channel: message.channel,
+					person: message.author
+				})
 
 				break
         }

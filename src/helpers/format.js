@@ -25,6 +25,7 @@ export const formatRoles = (roles) => {
 				out.push("sup")
 				break
 			case "all":
+			case 'fill':
 				out.push("top", "jgl", "mid", "adc", "sup")
 		}
 		return out
