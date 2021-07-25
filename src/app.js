@@ -14,8 +14,8 @@ import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from 
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
-
 import {checkPositive, formatChampions, formatRoles} from "./helpers/format.js";
+import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
 
 dotenv.config()
 
@@ -187,7 +187,10 @@ client.on("message", async (message) => {
                     {
                         title: `:book: Match history for ${message.member.displayName} :book:`,
                         color: '0099ff',
-                        pages: pages
+                        pages: pages,
+						allowStop: true,
+						time: 300000,
+						ratelimit: 1500
                     })
 
                 historyEmbed.start({
@@ -499,44 +502,72 @@ client.on("message", async (message) => {
                 }
 
                 break
-            // case 'graph':
-            // case 'mmr_history':
-            // case 'chart':
-            //     message.react('💹');
-			//
-			// 	let id;
-			// 	let nickname;
-			//
-			// 	if (args.length == 0) {
-			// 		id = message.author.id
-			// 		nickname = message.member.displayName
-			// 	} else {
-            //         let role = formatRoles([args[0]])
-            //         if (role[0]) {
-            //             let img = await generateRoleGraph(role[0], message.guild)
-			//
-			// 	        if (img != "error") {
-			// 		        await message.channel.send({files: [`${img}`]})
-            //                 fs.unlink(`${img}`, (e) => {})
-            //             }
-			//
-            //             break
-            //         }
-			//
-			// 		id = args[0].slice(3, args[0].length - 1)
-			// 		nickname = message.guild.member(id).displayName
-			// 	}
-			//
-			// 	let img = await generateGraph(id, nickname)
-			//
-			// 	if (img != "error") {
-			// 		await message.channel.send({files: [`${img}`]});
-			// 		fs.unlink(`${img}`, (e) => {})
-			// 	} else {
-			// 		message.channel.send("Something went wrong! Does this user exist?")
-			// 	}
-			//
-			// 	break
+            case 'graph':
+            case 'mmr_history':
+            case 'chart':
+                message.react('💹');
+
+				let id;
+				let nickname;
+
+				if (args.length == 0) {
+					id = message.author.id
+					nickname = message.member.displayName
+				} else {
+                    let role = formatRoles([args[0]])
+                    if (role[0]) {
+                        let img = await generateRoleGraph(role[0], message.guild)
+
+				        if (img != "error") {
+					        await message.channel.send({files: [`${img}`]})
+                            fs.unlink(`${img}`, (e) => {})
+                        }
+
+                        break
+                    }
+
+					id = args[0].slice(3, args[0].length - 1)
+					nickname = message.guild.member(id).displayName
+				}
+
+				let img = await generateGraph(id, nickname)
+
+				if (img != "error") {
+					await message.channel.send({files: [`${img}`]});
+					fs.unlink(`${img}`, (e) => {})
+				} else {
+					message.channel.send("Something went wrong! Does this user exist?")
+				}
+
+				break
+			case 'teammates':
+				message.react('🤤');
+				let user2, nickName2, teammateData; //im such an inbred for doing it like this
+				if (args.length < 1){
+					user2 = message.author.id;
+				} else {
+					user2 = args[0].slice(3, args[0].length - 1);
+				}
+				nickName2 = message.guild.member(user2).displayName;
+				teammateData = await getTeammateStats(user2);
+				let pages2 = await convertTeammateDataToEmbed(teammateData);
+				let teammateEmbed = new EasyEmbedPages(message.channel,
+					{
+						title: `:drool: Teammate stats for ${nickName2} :drool:`,
+						description: 'See your best and worst teammates!',
+						color: 'AFFDD7',
+						pages: pages2,
+						allowStop: true,
+						time: 300000,
+						ratelimit: 1500
+					})
+
+				teammateEmbed.start({
+					channel: message.channel,
+					person: message.author
+				})
+
+				break
         }
     }
 })

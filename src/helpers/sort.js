@@ -1,5 +1,3 @@
-
-
 export const quickSortPlayers = (players, role) => {
     switch (role) {
         case 'top':
@@ -31,6 +29,16 @@ export const quickSortPlayers = (players, role) => {
                 if (champ1.mmrDiff > champ2.mmrDiff) {
                     return 1
                 } else if (champ1.mmrDiff < champ2.mmrDiff) {
+                    return -1
+                }
+                return 0
+            })
+            break
+        case 'teammates':
+            players.sort((teammate1,teammate2) => {
+                if (teammate1.mmr > teammate2.mmr) {
+                    return 1
+                } else if (teammate1.mmr < teammate2.mmr) {
                     return -1
                 }
                 return 0
