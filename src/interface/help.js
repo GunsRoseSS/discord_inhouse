@@ -22,7 +22,7 @@ const preGame = [
     {
         name: '!queue [Role #1] ?[Role #2] ...?[Role #5]',
         aliases: '-',
-        description: 'Inserts you into the queue for the next game. You can select multiple roles in one command.'
+        description: 'Inserts you into the queue for the next game. You can select multiple roles in one command or use !queue all to queue for all roles.'
     },
     {
         name: '!leave',
@@ -71,7 +71,7 @@ const stats = [
         description: 'Displays the current ranking for all players for all roles (no arguments) or for a specific [role]'
     },
     {
-        name: '!rank ?[@player]',
+        name: '!rank ?[@player]/?[role]',
         aliases: '-',
         description: "Displays your current rank for all your roles. You can also view another [@player]'s rank."
     }
@@ -91,7 +91,7 @@ const history = [
     {
         name: '!graph ?[@player]',
         aliases: '!chart, !mmr_history',
-        description: "Displays a graph of your or another [@player]'s mmr progression over the past month."
+        description: "Displays a graph of your or another [@player]'s mmr progression over the past 30 games. You can also view a progression for all players in a [role]"
     }
 ]
 

@@ -100,6 +100,10 @@ export const getUserMatchHistory = async(id) => {
 export const getUserChampionStats = async (userID, champion) => {
 	const user = await getUser(userID);
 
+	if (!champion){
+		return user.championStats
+	}
+
 	for (let champ of user.championStats){
 		if (champ.name === champion){
 			return champ

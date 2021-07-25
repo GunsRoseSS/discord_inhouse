@@ -27,10 +27,12 @@ export const getAllPlayerChampionStats = (players, champion) => {
 export const championDataToEmbed = (playersData, type) => { //consistency? fuck consistency!
     let embedString = '';
     for (let player of playersData){
-        console.log(player);
         switch (type) {
             case 'nickname':
                 embedString = embedString + '<@' + player.player + '>' + '\n';
+                break
+            case 'champion':
+                embedString = embedString + player.name + '\n';
                 break
             case 'mmr':
                 embedString = embedString + checkPositive(player.mmrDiff).toString() + '\n';
