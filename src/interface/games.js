@@ -1,45 +1,64 @@
-import Game from "../models/game.js";
-import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js";
-import {getUser, getUserElo, getUserMatchHistory} from "./user.js";
-
 import {MessageEmbed} from "discord.js"
 
+import Game from "../models/game.js";
+
+import {getUser, getUserElo, getUserMatchHistory} from "./user.js"
 import {calculateNewElo} from "./matchup.js";
+import {updateRoleRanking} from "./ranking.js";
 
-import {embedAllRoleRanks, updateRoleRanking} from "./ranking.js";
+import { formatDate } from "../helpers/format.js"
+import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js"
 
-// import * as https from "node/https";
-//
-// //gets match data from riot api, probably deprecated soon
-// export const getMatchData = async (matchID) => {
-//     const options = {
-//         hostname: 'europe.api.riotgames.com',
-//         path: `/lol/match/v4/matches/${matchID}`,
-//         method: 'GET',
-//         headers: {
-//             'X-Riot-Token': process.env.RIOT_KEY
-//         }
-//     }
-//
-//     https.request(options, (res) => {
-//         let body = '';
-//
-//         res.on('data', function (chunk) {
-//             body += chunk
-//         })
-//
-//         res.on('end', function (chunk) {
-//             return JSON.parse(body)
-//         })
-//     }).on('error', (err) => {
-//         console.log(err);
-//         return 'error'
-//     })
-// }
+export const createGame = async (game, champs, winner) => {
 
-const dateOrdinal = (d) => {
-    return d + (31 == d || 21 == d || 1 == d ? "st" : 22 == d || 2 == d ? "nd" : 23 == d || 3 == d ? "rd" : "th")
-};
+    let newGame = new Game({
+        _id: (await Game.find()).length + 1,
+        matchID: 0,
+        players: await convertToPlayerList(game, champs, winner),
+        winner: winner,
+        date: new Date().setUTCHours(0,0,0,0)
+    })
+
+    await newGame.save()
+
+    for (let player of newGame.players) {
+        let user = await getUser(player.id)
+
+        user.matchHistory.push(newGame._id)
+        user.roles[player.role].mmr += (player.afterGameElo - player.previousElo)
+
+        let location = -1
+        for (let i = 0; i < user.championStats.length; i++) {
+            if (user.championStats[i].name === player.champion) {
+                location = i
+                break
+            }
+        }
+
+        if (location == -1) {
+            location = user.championStats.length
+            user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
+        }
+
+        if (player.team == winner) {
+            user.roles[player.role].wins += 1
+            user.championStats[location].wins += 1
+
+        } else {
+            user.roles[player.role].losses += 1
+            user.championStats[location].losses += 1
+        }
+
+        user.championStats[location].mmrDiff += (player.afterGameElo - player.previousElo)
+
+
+        await user.save()
+    }
+
+    updateRoleRanking()
+
+    return newGame
+}
 
 const convertToPlayerList = async (game, champs, winner) => {
     let blue = []
@@ -95,66 +114,10 @@ export const getGameEmbed = (game) => {
     game_embed.addField("BLUE", msg_blue, true)
     game_embed.addField("RED", msg_red, true)
 
-    let date = game.date.toString()
-    let date_p1 = date.substring(0, 9)
-    let date_p2 = dateOrdinal(date.substring(9, 10))
-    let date_p3 = date.substring(10, 15)
-
-    game_embed.setFooter(`Played on ${date_p1 + date_p2 + date_p3}`)
+    game_embed.setFooter(`Played on ${formatDate(game.date)}`)
 
     return {msg: msg_ping, embed: game_embed}
 
-}
-
-export const createGame = async (game, champs, winner) => {
-
-    let newGame = new Game({
-        _id: (await Game.find()).length + 1,
-        matchID: 0,
-        players: await convertToPlayerList(game, champs, winner),
-        winner: winner,
-        date: new Date()
-    })
-
-    await newGame.save()
-
-    for (let player of newGame.players) {
-        let user = await getUser(player.id)
-
-        user.matchHistory.push(newGame._id)
-        user.roles[player.role].mmr += (player.afterGameElo - player.previousElo)
-
-        let location = -1
-        for (let i = 0; i < user.championStats.length; i++) {
-            if (user.championStats[i].name === player.champion) {
-                location = i
-                break
-            }
-        }
-
-        if (location == -1) {
-            location = user.championStats.length
-            user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
-        }
-
-        if (player.team == winner) {
-            user.roles[player.role].wins += 1
-            user.championStats[location].wins += 1
-
-        } else {
-            user.roles[player.role].losses += 1
-            user.championStats[location].losses += 1
-        }
-
-        user.championStats[location].mmrDiff += (player.afterGameElo - player.previousElo)
-
-
-        await user.save()
-    }
-
-    updateRoleRanking()
-
-    return newGame
 }
 
 export const getGameByMatchID = async (matchID) => {
@@ -219,12 +182,7 @@ export const convertMatchHistoryToEmbed = (name, historyData) => {
     })
 
     historyData.dates = historyData.dates.map(date => {
-        let d = date.toString()
-        let date_p1 = d.substring(0, 9)
-        let date_p2 = dateOrdinal(d.substring(9, 10))
-        let date_p3 = d.substring(10, 15)
-
-        return date_p1 + date_p2 + date_p3
+        return formatDate(date)
     })
 
     historyData.champions = historyData.champions.map(champ => {

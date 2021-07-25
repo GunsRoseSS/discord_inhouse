@@ -5,17 +5,17 @@ import EasyEmbedPages from 'easy-embed-pages';
 import disbut from "discord-buttons";
 import fs from "fs";
 
-import Game from "./models/game.js";
-import {createUser, getUser, getUsers, getUserMatchHistory, getUserChampionStats} from "./interface/user.js";
-import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js";
-import {findMatch} from "./interface/matchmaking.js";
-import {checkPositive, formatChampions, formatRoles, formatUsers} from "./helpers/format.js";
-import {getMatchMessageEmbed, getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide} from "./interface/match.js";
-import {convertMatchHistoryToEmbed, createGame, getGameByID, getGameEmbed, getMatchHistoryData, updateMatchID} from "./interface/games.js";
-import {allRoleRanking, embedPlayerRanks, embedRankingPages, getPlayerRanking, getRoleRanking, updateRoleRanking} from "./interface/ranking.js";
-import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js";
-import {convertHelpToEmbed} from "./interface/help.js";
-import {generateGraph} from "./interface/graph.js";
+import {createUser, getUser, getUsers,getUserChampionStats} from "./interface/user.js"
+import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js"
+import {getMatchMessageEmbed, getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide} from "./interface/match.js"
+import {convertMatchHistoryToEmbed, createGame, getGameByID, getGameEmbed, getMatchHistoryData, updateMatchID, getGameByMatchID} from "./interface/games.js"
+import {allRoleRanking, embedPlayerRanks, embedRankingPages, getPlayerRanking, getRoleRanking, updateRoleRanking} from "./interface/ranking.js"
+import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js"
+import {convertHelpToEmbed} from "./interface/help.js"
+import {generateGraph, generateRoleGraph} from "./interface/graph.js"
+import {findMatch} from "./interface/matchmaking.js"
+
+import {checkPositive, formatChampions, formatRoles} from "./helpers/format.js";
 
 dotenv.config()
 
@@ -86,7 +86,13 @@ client.on("message", async (message) => {
 				message.channel.send(await getQueueEmbed())
 				break
 			case "view": {
-				let game = await getGameByID(args[0])
+				let game
+
+				if (args[0] > 10000) {
+					game = await getGameByMatchID(args[0])
+				} else {
+					game = await getGameByID(args[0])
+				}
 
 				if (game) {
 					let embed = getGameEmbed(game)
@@ -297,7 +303,7 @@ client.on("message", async (message) => {
                 switch (args.length) {
                     case 1:
                         let champion = formatChampions([args[0]]);
-                        if (champion === []) {
+                        if (champion.length == 0) {
                             message.channel.send('Have you considered a spelling course? Could not recognise champion.')
                             break
                         }
@@ -467,6 +473,18 @@ client.on("message", async (message) => {
 					id = message.author.id
 					nickname = message.member.displayName
 				} else {
+                    let role = formatRoles([args[0]])
+                    if (role[0]) {
+                        let img = await generateRoleGraph(role[0], message.guild)
+
+				        if (img != "error") {
+					        await message.channel.send({files: [`${img}`]})
+                            fs.unlink(`${img}`, (e) => {})
+                        }			    
+
+                        break
+                    }
+
 					id = args[0].slice(3, args[0].length - 1)
 					nickname = message.guild.member(id).displayName
 				}
@@ -474,54 +492,13 @@ client.on("message", async (message) => {
 				let img = await generateGraph(id, nickname)
 
 				if (img != "error") {
-					await message.channel.send({files: [
-						`${img}.png`
-					]});
-	
-					fs.unlink(`${img}.png`, (e) => {})
+					await message.channel.send({files: [`${img}`]});
+					fs.unlink(`${img}`, (e) => {})
 				} else {
 					message.channel.send("Something went wrong! Does this user exist?")
 				}
 
 				break
-
-				/*
-                let nickname;
-                let player;
-                if (args.length === 0) {
-                    player = message.author.id;
-                    nickname = message.member.displayName;
-                } else {
-                    player = args[0].slice(3, args[0].length - 1);
-                    nickname = message.guild.member(player).displayName;
-                }
-                const playerData = await getUser(player);
-				
-                if (playerData) {
-                    let roles = {
-                        top: playerData.roles.top.wins === 0 && playerData.roles.top.wins,
-                        jgl: playerData.roles.jgl.wins === 0 && playerData.roles.jgl.wins,
-                        mid: playerData.roles.mid.wins === 0 && playerData.roles.mid.wins,
-                        adc: playerData.roles.adc.wins === 0 && playerData.roles.adc.wins,
-                        sup: playerData.roles.sup.wins === 0 && playerData.roles.sup.wins
-                    };
-                    let random = await generateGraph(roles, player, nickname)
-
-                    await message.channel.send({
-                        files: [
-                            `${random}.png`
-                        ]
-                    });
-
-                    fs.unlink(`${random}.png`, (e) => {
-
-                    })
-                } else {
-                    message.channel.send('User not found in database. They have not played any games (yet)')
-                    break
-                }
-
-				*/
         }
     }
 })
@@ -620,7 +597,8 @@ mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin
     user: process.env.DB_USER,
     pass: process.env.DB_PASS,
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+	serverSelectionTimeoutMS: 5000
 }).then(() => {
     client.login(process.env.BOT_TOKEN)
 })
