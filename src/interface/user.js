@@ -88,6 +88,8 @@ export const getUserMatchHistory = async(id) => {
 
 	if (user) {
 		return user.matchHistory
+	} else {
+		return []
 	}
 
 	
@@ -95,6 +97,10 @@ export const getUserMatchHistory = async(id) => {
 
 export const getUserChampionStats = async (userID, champion) => {
 	const user = await getUser(userID);
+
+	if (!user){
+		return null
+	}
 
 	if (!champion){
 		return user.championStats

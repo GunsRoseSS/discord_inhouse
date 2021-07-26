@@ -18,8 +18,6 @@ export const findMatch = async () => {
 
     let role_permutations = await generateRolePermutations()
 
-    console.log((new Date() - start) + "ms")
-
     start = new Date()
     
     let best = null

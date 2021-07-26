@@ -62,5 +62,5 @@ export const getQueueEmbed = async () => {
 }
 
 export const leaveQueue = async (id) => {
-	await Queue.deleteOne({_id: id})
+	return Queue.deleteOne({_id: id})
 }

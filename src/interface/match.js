@@ -59,21 +59,26 @@ export const getMatchEndMessageEmbed = (initiator, winner, player_states) => {
     let msg = `${initiator} wants to score the game as a win for ${winner} \n Result will be accepted after 6 players confirm \n`
     let msg_ping = ""
 
-    let count = 0
+    let acceptCount = 0;
+    let declineCount = 0;
 
     Object.keys(player_states).forEach(player => {
         const p = player_states[player]
         if (p.state === "accept") {
-            count++
+            acceptCount++
+        }
+        if (p.state === "decline") {
+            declineCount++
         }
         //msg += getStateEmoji(p.state)
         msg_ping += `${p.user}`
     })
 
-    msg += getStateEmoji("accept").repeat(count)
-    msg += getStateEmoji("none").repeat(10 - count)
+    msg += getStateEmoji("accept").repeat(acceptCount);
+    msg += getStateEmoji("decline").repeat(declineCount);
+    msg += getStateEmoji("none").repeat(10 - acceptCount - declineCount);
 
-    msg += `\u2800 \u2800 ${count}/6`
+    msg += `\u2800 \u2800 ${acceptCount}/6`;
 
     let match_embed = new MessageEmbed()
         .setTitle("Confirm match end")
@@ -106,6 +111,15 @@ export const getPlayerSide = (match, id, invert = false) => {
 export const countReadyPlayers = (player_states) => {
     return Object.keys(player_states).reduce((count, id) => {
         if (player_states[id].state === "accept") {
+            return count + 1
+        }
+        return count
+    }, 0)
+}
+
+export const countDeclinedPlayers = (player_states) => {
+    return Object.keys(player_states).reduce((count, id) => {
+        if (player_states[id].state === "decline") {
             return count + 1
         }
         return count

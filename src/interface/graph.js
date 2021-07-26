@@ -9,7 +9,11 @@ import { formatDate } from "../helpers/format.js"
 import { ordinal } from "openskill"
 
 export const generateRoleGraph = async (role, client, count = 30) => {
-    let games = await Game.find()
+    let games = await Game.find();
+
+    if (!games){
+        return 'error';
+    }
 
     const roles = ["top", "jgl", "mid", "adc", "sup"]
     const roles_full = ["Top", "Jungle", "Middle", "ADC", "Support"]

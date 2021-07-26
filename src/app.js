@@ -7,7 +7,13 @@ import fs from "fs";
 
 import {createUser, getUser, getUsers, getUserChampionStats} from "./interface/user.js"
 import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js"
-import {getMatchMessageEmbed, getMatchEndMessageEmbed, countReadyPlayers, getPlayerSide} from "./interface/match.js"
+import {
+    getMatchMessageEmbed,
+    getMatchEndMessageEmbed,
+    countReadyPlayers,
+    getPlayerSide,
+    countDeclinedPlayers
+} from "./interface/match.js"
 import {
     convertMatchHistoryToEmbed,
     createGame,
@@ -61,8 +67,10 @@ client.on("message", async (message) => {
 
         switch (cmd) {
             case "queue":
-				{
+            {
                 message.react('⚔');
+
+                let admin = message.member.hasPermission("ADMINISTRATOR");
 
                 if (args.length === 0) {
                     return message.channel.send("Missing role(s)")
@@ -70,20 +78,35 @@ client.on("message", async (message) => {
 
                 user_id = message.author.id;
 
-                if (message.member.hasPermission("ADMINISTRATOR")) {
-                    switch (args[0]) {
-                        case "clear":
+
+                switch (args[0]) {
+                    case "clear":
+                        if (admin) {
                             message.channel.send(`${await clearQueue()} player(s) removed from queue`)
                             return
-                        case "count":
+                        } else {
+                            message.channel.send("Shut up nerd, you're not an admin.")
+                            return
+                        }
+                    case "count":
+                        if (admin) {
                             message.channel.send(`${(await playersInQueue()).length} player(s) in queue`)
                             return
-                        case "-u":
+                        } else {
+                            message.channel.send("Shut up nerd, you're not an admin.")
+                            return
+                        }
+                    case "-u":
+                        if (admin) {
                             user_id = args[1]
                             args = args.slice(2)
                             break
-                    }
+                        } else {
+                            message.channel.send("Shut up nerd, you're not an admin.")
+                            return
+                        }
                 }
+
 
                 user = await getUser(user_id);
 
@@ -102,28 +125,31 @@ client.on("message", async (message) => {
                 }
 
                 break
-			}
-			case "cancel":
-				{
-					if (message.member.hasPermission("ADMINISTRATOR") && current_match) {
-						current_match = null
-						match_message = null
-						player_states = {}
-						match_playing = false
-						initiator = null
-						winner = null
-						champs = {}
-						message.channel.send("Current game has been cancelled")
-					} else {
-						message.channel.send("There is no game being played or you do not have permission to cancel it")
-					}
-				}
-				break
+            }
+            case "cancel": {
+                if (message.member.hasPermission("ADMINISTRATOR") && current_match) {
+                    current_match = null
+                    match_message = null
+                    player_states = {}
+                    match_playing = false
+                    initiator = null
+                    winner = null
+                    champs = {}
+                    message.channel.send("Current game has been cancelled")
+                } else {
+                    message.channel.send("There is no game being played or you do not have permission to cancel it")
+                }
+            }
+                break
             case "leave":
                 message.react('🏳️');
 
-                await leaveQueue(message.author.id)
-                message.channel.send(await getQueueEmbed())
+                let succes = await leaveQueue(message.author.id)
+                if (succes.n === 0){
+                    message.channel.send("You can't leave the queue if you're not in it.");
+                } else {
+                    message.channel.send(await getQueueEmbed());
+                }
                 break
             case "view": {
                 message.react('👀');
@@ -147,34 +173,47 @@ client.on("message", async (message) => {
             case "start":
                 message.react('☄');
 
-                let queue = await playersInQueue()
-                let count = queue.length
+                if (current_match === null) {
+                    let queue = await playersInQueue()
+                    let inQueue = false;
+                    for (let player of queue){
+                        if (player._id === message.author.id){
+                            inQueue = true;
+                        }
+                    }
+                    if (!inQueue){
+                        message.channel.send("Nice try loser, you're not in the queue.");
+                        break
+                    }
+                    let count = queue.length
 
-                if (count < 10) {
-                    message.channel.send(`Not enough players in queue, need ${10 - count} more`)
-                    return
-                }
-
-                current_match = await findMatch()
-
-                if (current_match != null) {
-                    match_playing = false
-                    player_states = {}
-
-                    for (let matchup of current_match.game) {
-                        player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
-                        player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
+                    if (count < 10) {
+                        message.channel.send(`Not enough players in queue, need ${10 - count} more`)
+                        return
                     }
 
-                    {
-                        let msg = getMatchMessageEmbed(current_match, player_states)
+                    current_match = await findMatch()
 
-                        match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+                    if (current_match != null) {
+                        match_playing = false
+                        player_states = {}
+
+                        for (let matchup of current_match.game) {
+                            player_states[matchup.player1] = {user: `<@${matchup.player1}>`, state: "none"}
+                            player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
+                        }
+
+                        {
+                            let msg = getMatchMessageEmbed(current_match, player_states)
+
+                            match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+                        }
+                    } else {
+                        message.channel.send("Not enough role variation to find game, try queuing in more roles")
                     }
                 } else {
-                    message.channel.send("Not enough role variation to find game, try queuing in more roles")
+                    message.channel.send('There already is a match going on, are u stupid?');
                 }
-
                 break
             case 'loss':
             case 'lose':
@@ -195,8 +234,14 @@ client.on("message", async (message) => {
                             let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
 
                             match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
+                        } else {
+                            message.channel.send("One of the teams still needs to do !lineup");
                         }
+                    } else {
+                        message.channel.send("You're not in the match, fuck off!");
                     }
+                } else {
+                    message.channel.send("Can't win a match if there's no match going on. :sunglasses:");
                 }
                 break
             case "team":
@@ -213,6 +258,8 @@ client.on("message", async (message) => {
                     } else {
                         message.channel.send(`Message had too few/many champs: ${lineup.join(", ")}`)
                     }
+                } else {
+                    message.channel.send("Either there is no match being played or you're not in the current match.")
                 }
                 break
             case "lineup2":
@@ -222,6 +269,11 @@ client.on("message", async (message) => {
             case "past":
             case 'history':
                 message.react('📖')
+
+                if (args.length > 0) {
+                    message.channel.send('You can only look up history for yourself (dabs)');
+                    break
+                }
 
                 embedData = await getMatchHistoryData(message.author.id)
 
@@ -252,9 +304,16 @@ client.on("message", async (message) => {
                 break
             case "matchid":
             case "link":
-                message.react('⛓');
-                updateMatchID(args[0], args[1]);
-                break
+                if (args.length > 1) {
+                    message.react('⛓');
+                    let success = updateMatchID(args[0], args[1]);
+                    if (success !== null) {
+                        message.channel.send(`Game id ${args[0]} not found, do you need a pair of glasses?`)
+                    }
+                } else {
+                    message.channel.send("No, that's not how that works. !link [matchID] [RiotID]")
+                }
+              break
             case 'rank':
                 message.react('👑');
 
@@ -263,13 +322,17 @@ client.on("message", async (message) => {
                     nickname = message.member.displayName;
                 } else {
                     user_id = args[0].slice(3, args[0].length - 1);
-                    if (await getUser(player)) {
+                    if (await getUser(user_id)) {
                         ranking = await getPlayerRanking(user_id);
                         nickname = message.guild.member(user_id).displayName;
                     } else {
                         message.channel.send('Could not find player in the Database. Have they played a game before?')
                         break
                     }
+                }
+                if (!ranking){
+                    message.channel.send(`could not find any games for ${nickname}`);
+                    break
                 }
 
                 embed = new EasyEmbedPages(message.channel,
@@ -326,14 +389,15 @@ client.on("message", async (message) => {
                         })
                     rankEmbed.start();
                 } else {
-                    if (args[0].toLowerCase() === 'top' || args[0].toLowerCase() === 'jgl' || args[0].toLowerCase() === 'mid' || args[0].toLowerCase() === 'adc' || args[0].toLowerCase() === 'sup') {
-                        let ranking = await getRoleRanking(args[0]);
+                    let role = formatRoles([args[0]]);
+                    if (role.length > 0) {
+                        let ranking = await getRoleRanking(role[0]);
                         let pages = embedRankingPages(ranking, false)
 
                         const rankEmbed = new EasyEmbedPages(message.channel,
                             {
                                 color: 'aa77ff',
-                                title: `Ranks for ${args[0]}`,
+                                title: `Ranks for ${role[0]}`,
                                 description: 'Type !ranking for a ranking of all roles.',
                                 pages: pages,
                                 allowStop: true,
@@ -470,7 +534,7 @@ client.on("message", async (message) => {
                 nickname = message.guild.member(user_id).displayName;
                 embedData = await getUserChampionStats(user_id);
 
-                if (embedData) {
+                if (embedData === []) {
                     embed = new MessageEmbed()
                         .setTitle(`All champion stats for ${nickname}`)
                         .setColor('6678B8')
@@ -553,29 +617,40 @@ client.on("message", async (message) => {
                 break
             case 'graph':
             case 'mmr_history':
-            case 'chart':
-				{
+            case 'chart': {
                 message.react('💹');
 
-				let user_id
-				let nickname
+                let user_id;
+                let nickname;
+                let user;
 
                 if (args.length == 0) {
                     user_id = message.author.id
                     nickname = message.member.displayName
+
+                    user = await getUser(user_id);
+                    if (user !== null){
+                        if (user.matchHistory.length === 0){
+                            message.channel.send("You haven't played any matches.");
+                            break
+                        }
+                    } else{
+                        message.channel.send('Error: User not found.');
+                        break
+                    }
                 } else {
                     let role = formatRoles([args[0]])
 
                     if (role[0]) {
-
                         let img = await generateRoleGraph(role[0], client)
 
                         if (img != "error") {
                             await message.channel.send({files: [`${img}`]})
                             fs.unlink(`${img}`, (e) => {
                             })
+                        } else {
+                            message.channel.send("Error: something went wrong! There probably hasn't been any games played at all.")
                         }
-
                         break
                     }
 
@@ -599,7 +674,7 @@ client.on("message", async (message) => {
                 }
 
                 break
-			}
+            }
             case 'teammates':
                 message.react('🤤');
                 if (args.length < 1) {
@@ -643,9 +718,10 @@ client.on("clickButton", async (button) => {
 
                 match_message.edit(`||${msg.msg}||`, msg.embed)
 
-                if (countReadyPlayers(player_states) <= 10 && match_playing === false) {
+                if (countReadyPlayers(player_states) >= 10 && match_playing === false) {
                     let msg = getMatchMessageEmbed(current_match, player_states, true)
-                    await button.channel.send(`||${msg.msg}||`, msg.embed)
+                    await button.channel.send(`||${msg.msg}||`, msg.embed);
+                    await button.channel.send("Please insert your lineups using !lineup [top] [jgl] [mid]...");
                     match_playing = true
 
                     await match_message.delete()
@@ -661,6 +737,11 @@ client.on("clickButton", async (button) => {
         case "decline_game": {
             if (button.clicker.id in player_states) {
                 player_states[button.clicker.id].state = "decline"
+                if (countDeclinedPlayers(player_states) >= 3 && match_playing === false) {
+                    await match_message.delete();
+                    button.channel.send('Match declined. :cry:');
+                    break
+                }
                 let msg = getMatchMessageEmbed(current_match, player_states)
 
                 match_message.edit(`||${msg.msg}||`, msg.embed)
@@ -709,7 +790,25 @@ client.on("clickButton", async (button) => {
 
                 let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
 
-                match_message.edit(`||${msg.msg}||`, msg.embed)
+                match_message.edit(`||${msg.msg}||`, msg.embed);
+
+                let count = 0
+
+                Object.keys(player_states).forEach(player => {
+                    if (player_states[player].state === "decline") {
+                        count++
+                    }
+                })
+
+                if (count >= 6) {
+                    try {await match_message.delete()}
+                    catch (e) {
+                        
+                    }
+
+                    button.channel.send('Confirm win deleted.');
+
+                }
             }
         }
             break

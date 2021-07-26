@@ -140,7 +140,7 @@ export const getGameByID = async (id) => {
 }
 
 export const updateMatchID = async (gameID, matchID) => {
-    await Game.findByIdAndUpdate(gameID, {matchID: matchID})
+    return Game.findByIdAndUpdate(gameID, {matchID: matchID}, {useFindAndModify: false})
 }
 
 export const getAllGames = async () => {
@@ -150,11 +150,15 @@ export const getAllGames = async () => {
 export const getUserGames = async (id) => {
     let history = await getUserMatchHistory(id)
 
+    if (history.length === 0){
+        return []
+    }
+
     history = history.map(match => {
         return {_id: match}   
     })
 
-    return await Game.find({$or: history})
+    return Game.find({$or: history})
 }
 
 export const getMatchHistoryData = async (id) => {
