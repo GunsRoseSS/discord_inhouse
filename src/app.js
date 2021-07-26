@@ -613,6 +613,7 @@ client.on("message", async (message) => {
                 break
             default:
                 message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
+                message.channel.send('https://cdn.discordapp.com/attachments/863014796915638296/869315149738172506/kiwihelp.jpg');
         }
     }
 })
