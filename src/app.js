@@ -96,15 +96,15 @@ client.on("message", async (message) => {
                             message.channel.send("Shut up nerd, you're not an admin.")
                             return
                         }
-                    case "-u":
-                        if (admin) {
-                            user_id = args[1]
-                            args = args.slice(2)
-                            break
-                        } else {
-                            message.channel.send("Shut up nerd, you're not an admin.")
-                            return
-                        }
+                    // case "-u":
+                    //     if (admin) {
+                    //         user_id = args[1]
+                    //         args = args.slice(2)
+                    //         break
+                    //     } else {
+                    //         message.channel.send("Shut up nerd, you're not an admin.")
+                    //         return
+                    //     }
                 }
 
 
@@ -262,10 +262,10 @@ client.on("message", async (message) => {
                     message.channel.send("Either there is no match being played or you're not in the current match.")
                 }
                 break
-            case "lineup2":
-                champs["BLUE"] = ["Tristana", "Maokai", "Warwick", "Lulu", "Fiora"]
-                champs["RED"] = ["Ekko", "LeeSin", "Vladimir", "Rell", "Leona"]
-                break
+            // case "lineup2":
+            //     champs["BLUE"] = ["Tristana", "Maokai", "Warwick", "Lulu", "Fiora"]
+            //     champs["RED"] = ["Ekko", "LeeSin", "Vladimir", "Rell", "Leona"]
+            //     break
             case "past":
             case 'history':
                 message.react('📖')
@@ -565,7 +565,6 @@ client.on("message", async (message) => {
 
                 embed = new EasyEmbedPages(message.channel, {
                     color: 'ffffff',
-                    footer: "Note: Some commands could be restricted by your server permissions.",
                     allowStop: true,
                     time: 300000,
                     ratelimit: 1500,

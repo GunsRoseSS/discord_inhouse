@@ -1,4 +1,4 @@
-let legend = "Legend:\n[] = argument\n? = optional argument\n\n"
+let legend = "Note: Some commands could be restricted by your server permissions.\nLegend:\n[] = argument\n? = optional argument\n\n"
 
 const misc = [//this way it's easier to edit help in case we need to update it.
     {
@@ -10,6 +10,11 @@ const misc = [//this way it's easier to edit help in case we need to update it.
         name: '!epic',
         aliases: '-',
         description: 'epic'
+    },
+    {
+        name: '!notepic',
+        aliases: '-',
+        description: 'not epic'
     },
     {
         name: '!changeimg {image attachment}',
@@ -38,6 +43,11 @@ const preGame = [
         name: '!start',
         aliases: '-',
         description: 'Starts the matchmaking process. A minimum of 10 people in the queue are required to start a game.'
+    },
+    {
+        name: '!cancel',
+        aliases: '-',
+        description: 'Cancels the matchmaking process.'
     }
 ]
 
@@ -74,6 +84,11 @@ const stats = [
         name: '!rank ?[@player]/?[role]',
         aliases: '-',
         description: "Displays your current rank for all your roles. You can also view another [@player]'s rank."
+    },
+    {
+        name: '!teammates ?[@player]',
+        aliases: '-',
+        description: "Displays teammate stats for yourself or for a [@player]"
     }
 ]
 
