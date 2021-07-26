@@ -1,15 +1,15 @@
-export const getRoleEmoji = (role) => { //TODO: HAS TO BE CHANGED ON RELEASE
+export const getRoleEmoji = (role) => {
     switch (role) {
         case "top":
-            return "<:Top_icon:867737133183008768>"
+            return "<:TOP:853012268051857448>"
         case "jgl":
-            return "<:Jungle_icon:867737174342369310>"
+            return "<:JGL:853012268140199946>"
         case "mid":
-            return "<:Middle_icon:867737195544707108>"
+            return "<:MID:853012267821694997>"
         case "adc":
-            return "<:Bottom_icon:867737217752760330>"
+            return "<:ADC:853012268005982228>"
         case "sup":
-            return "<:Support_icon:867737232245129227>"
+            return "<:SUP:853012248666963979>"
     }
 }
 
