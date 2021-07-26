@@ -136,6 +136,16 @@ export const getAllGames = async () => {
     return Game.find()
 }
 
+export const getUserGames = async (id) => {
+    let history = await getUserMatchHistory(id)
+
+    history = history.map(match => {
+        return {_id: match}   
+    })
+
+    return await Game.find({$or: history})
+}
+
 export const getMatchHistoryData = async (id) => {
     let dates = [],
         roles = [],

@@ -1,11 +1,12 @@
 import ChartJSImage from "chart.js-image"
+import https from "https"
 
 import Game from "../models/game.js"
 
 import { getUserMatchHistory } from "./user.js"
 import { formatDate } from "../helpers/format.js"
 
-export const generateRoleGraph = async (role, guild, count = 30) => {
+export const generateRoleGraph = async (role, client, count = 30) => {
     let games = await Game.find()
 
     const roles = ["top", "jgl", "mid", "adc", "sup"]
@@ -34,8 +35,21 @@ export const generateRoleGraph = async (role, guild, count = 30) => {
         return out
     }, {})
 
-    games = Object.keys(games).reduce((out, key) => {
-        out.labels.push(key)
+    let users = []
+
+
+    for (let i=0;i<Object.keys(games).length;i++) {
+        let user = Object.keys(games)[i]
+        try {
+            user = await client.users.fetch(Object.keys(games)[i])
+            user = user.username
+        } catch (e) {}
+        
+        users.push(user)
+    }
+
+    games = Object.keys(games).reduce((out, key, i) => {
+        out.labels.push(users[i])
         out.data.push(fillRange(start, end, flattenDates(games[key])))
         return out
     }, {"labels": [], "data": []})
@@ -68,7 +82,7 @@ export const generateGraph = async (id, nickname, count = 30) => {
 export const getUserGraphData = async (id, count = 30) => {
     let matches = await getUserMatchHistory(id)
 
-    if (matches.length == 0) {
+    if (!matches || matches.length == 0) {
         return null
     }
 
@@ -105,7 +119,16 @@ export const getUserGraphData = async (id, count = 30) => {
 const createGraph = async (title, labels, legend, data) => {
     const textColour = "#ffffff"
 
-    const colours = ["#ff6456", "#00ffff", "#ff00ff", "#ffcc56", "#00ff00", "#ff9a00"].sort(() => (Math.random() > .5) ? 1 : -1)
+    //F6BD60 = Maximum yellow red
+    //F24333 = Cinnabar (orange-red)
+    //f7f4f3 = isabelline (white-grey)
+    //437c90 = teal blue
+    //d90429 = amarnth red
+    //802392 = dark magenta
+    //456990 = queen blue
+    //6bd425 = lime green
+
+    const colours = ["#ff6456", "#00ffff", "#ff00ff", "#ffcc56", "#00ff00", "#ff9a00", "#f7f4f3", "#6db425", "#437c90", "#d90429"].sort(() => (Math.random() > .5) ? 1 : -1)
 
     let minValue = Number.MAX_VALUE
     let maxValue = 0

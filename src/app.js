@@ -298,7 +298,7 @@ client.on("message", async (message) => {
 							)
 							rankEmbed.start();
 						} else {
-							message.channel.send('Are you fucking retarded? Learn to spell a role: top, jgl, mid, adc or sup.')
+                            message.channel.send("?", {files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
 						}
 					}
 					break
@@ -515,8 +515,10 @@ client.on("message", async (message) => {
 					nickname = message.member.displayName
 				} else {
                     let role = formatRoles([args[0]])
+                    
                     if (role[0]) {
-                        let img = await generateRoleGraph(role[0], message.guild)
+
+                        let img = await generateRoleGraph(role[0], client)
 
 				        if (img != "error") {
 					        await message.channel.send({files: [`${img}`]})
@@ -527,7 +529,10 @@ client.on("message", async (message) => {
                     }
 
 					id = args[0].slice(3, args[0].length - 1)
-					nickname = message.guild.member(id).displayName
+
+                    try {
+                        nickname = message.guild.member(id).displayName
+                    } catch(e) {}
 				}
 
 				let img = await generateGraph(id, nickname)
@@ -536,7 +541,7 @@ client.on("message", async (message) => {
 					await message.channel.send({files: [`${img}`]});
 					fs.unlink(`${img}`, (e) => {})
 				} else {
-					message.channel.send("Something went wrong! Does this user exist?")
+					message.channel.send(`Something went wrong! Does ${args.join(" ")} exist?`)
 				}
 
 				break

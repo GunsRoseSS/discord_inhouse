@@ -17,6 +17,7 @@
     "dotenv": "^10.0.0",
     "easy-embed-pages": "0.0.3",
     "mongoose": "^5.13.3",
-    "node": "^16.5.0"
+    "node": "^16.5.0",
+    "openskill": "^1.4.1"
   }
 }
