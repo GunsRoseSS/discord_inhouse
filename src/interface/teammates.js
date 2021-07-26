@@ -5,13 +5,15 @@ import {quickSortPlayers} from "../helpers/sort.js";
 import {emojiNumberSelector, emojiGainedSelector} from "../helpers/emoji.js";
 import {checkPositive} from "../helpers/format.js";
 
+import { ordinal } from "openskill";
+
 export const getTeammateStats = async (id) => {
     let userGames = await getUserGames(id)
 
     let data = userGames.reduce((out, game) => {
         let index = game.players.findIndex(element => element.id == id)
         let user = game.players[index]
-        let mmrDiff = user.afterGameElo - user.previousElo
+        let mmrDiff = Math.floor(ordinal(user.afterGameElo) - ordinal(user.previousElo))
         let win = (index < 5 && game.winner == "BLUE") || (index >= 5 && game.winner == "RED") ? true : false
 
         let start = index < 5 ? 0 : 5

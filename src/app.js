@@ -103,6 +103,22 @@ client.on("message", async (message) => {
 
                 break
 			}
+			case "cancel":
+				{
+					if (message.member.hasPermission("ADMINISTRATOR") && current_match) {
+						current_match = null
+						match_message = null
+						player_states = {}
+						match_playing = false
+						initiator = null
+						winner = null
+						champs = {}
+						message.channel.send("Current game has been cancelled")
+					} else {
+						message.channel.send("There is no game being played or you do not have permission to cancel it")
+					}
+				}
+				break
             case "leave":
                 message.react('🏳️');
 
@@ -327,7 +343,7 @@ client.on("message", async (message) => {
                         )
                         rankEmbed.start();
                     } else {
-                        message.channel.send("?", {files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
+                        message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
                     }
                 }
                 break
@@ -612,7 +628,8 @@ client.on("message", async (message) => {
 
                 break
             default:
-                message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
+                //message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
+				message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
         }
     }
 })
