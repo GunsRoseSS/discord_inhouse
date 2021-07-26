@@ -164,8 +164,6 @@ client.on("message", async (message) => {
             case 'lose':
             case "win":
             case "won":
-			case "loss":
-			case "lose":
                 message.react('💸');
 
                 if (match_playing) {
@@ -613,6 +611,8 @@ client.on("message", async (message) => {
                 })
 
                 break
+            default:
+                message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
         }
     }
 })

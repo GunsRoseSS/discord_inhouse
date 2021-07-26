@@ -120,6 +120,7 @@ export const getGameEmbed = (game) => {
 
     let game_embed = new MessageEmbed()
         .setTitle(`Match ${game._id} results`)
+        .setColor('#7da832')
 
     game_embed.addField("BLUE", msg_blue, true)
     game_embed.addField("RED", msg_red, true)
