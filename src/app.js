@@ -158,6 +158,8 @@ client.on("message", async (message) => {
                 }
 
                 break
+            case 'loss':
+            case 'lose':
             case "win":
             case "won":
                 message.react('💸');

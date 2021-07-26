@@ -1,0 +1,98 @@
+Server migration and test setup:
+- Put bot into TRR server
+- Change match accept button to 10 people necessary
+- Change win confirm button to 6 people necessary
+- Run on cloud application or locally? If cloud, test db connection (whitelist ip)
+- Remove/comment out test commands
+
+Commands to test:
+- queue
+- leave
+- view
+- start
+- win/won
+- team/lineup
+- past/history
+- link/matchid
+- rank
+- ranking
+- champ/champion
+- champs/champions
+- help
+- changeimg ?
+- graph/mmr_history/chart
+- teammates
+
+General command tests:
+- test all possible paths, are all responses correct?
+- does data get written into the database correctly
+- test aliases
+
+!queue
+- check if new users get added into the database correctly
+- check if administrator priveleges work correctly (clear, count)
+
+!leave
+- what happens when a user that isnt in the queue uses this command?
+
+!view
+- check bad id
+
+!start
+- check impossible combination of queued up players (not possible to find a game) 1. only one person in one role, 2. three people for 2 roles (one person being queued up for both)
+- what happens when a player who isnt in the match clicks on the match buttons?\
+- what happens when there is no active match?
+
+!win
+- what happens when a player who isnt in the match uses this command?
+- what happens when lineups arent inserted?
+- what happens when there is no active match?
+
+!lineup
+- what happens when there is no active match?
+- what happens when the user fucks up a champion name?
+
+!history
+- what happens when the user hasnt played any matches?
+- what happens when the user isnt registered?
+- what happens when there are no games in the db?
+
+!link
+- what happens when the match id inserted isnt found in the db?
+
+!rank
+- what happens when the user isnt registered?
+- what happens when there are no games in the db?
+- what happens to empty roles?
+
+!ranking
+- what happens when there are no games in the db (for a role)?
+
+!champion
+- no user found
+- no games found
+- bad champion inserted
+
+!champions
+- no user found
+- no games found
+
+!help
+- is help complete and correct?
+
+!changeimg
+- check admin priveleges
+
+!graph
+- no user found
+- no games found/empty graph data?
+
+!teammates
+- no user found
+- no games found
+
+
+
+
+
+
