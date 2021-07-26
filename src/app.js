@@ -626,7 +626,7 @@ client.on("clickButton", async (button) => {
 
                 match_message.edit(`||${msg.msg}||`, msg.embed)
 
-                if (countReadyPlayers(player_states) <= 1 && match_playing === false) {
+                if (countReadyPlayers(player_states) <= 10 && match_playing === false) {
                     let msg = getMatchMessageEmbed(current_match, player_states, true)
                     await button.channel.send(`||${msg.msg}||`, msg.embed)
                     match_playing = true
@@ -667,7 +667,7 @@ client.on("clickButton", async (button) => {
                     }
                 })
 
-                if (count >= 1) {
+                if (count >= 6) {
                     await match_message.delete()
 
                     let game = await createGame(current_match.game, champs, winner)

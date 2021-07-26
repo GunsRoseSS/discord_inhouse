@@ -71,8 +71,6 @@ export const findMatch = async () => {
         })
     })
 
-    console.log((new Date() - start) + "ms")
-
     return best
 }
 

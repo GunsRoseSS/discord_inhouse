@@ -1,5 +1,6 @@
 import {quickSortPlayers} from "../helpers/sort.js";
 import {checkPositive} from "../helpers/format.js";
+import {emojiNumberSelector} from "../helpers/emoji.js";
 
 
 export const fetchChampionIcon = (champion) => {
@@ -26,10 +27,12 @@ export const getAllPlayerChampionStats = (players, champion) => {
 
 export const championDataToEmbed = (playersData, type) => { //consistency? fuck consistency!
     let embedString = '';
+    let counter = 0;
     for (let player of playersData){
+        counter += 1
         switch (type) {
             case 'nickname':
-                embedString = embedString + '<@' + player.player + '>' + '\n';
+                embedString = embedString + emojiNumberSelector(counter) + '<@' + player.player + '>' + '\n';
                 break
             case 'champion':
                 embedString = embedString + player.name + '\n';
