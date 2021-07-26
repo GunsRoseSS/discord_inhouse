@@ -14,7 +14,13 @@ const MATCHUP_DEVIATION_THRESHOLD = 0.10 //Average deviation of matchup winrates
 
 //Find the best match using the current queue
 export const findMatch = async () => {
+    let start = new Date()
+
     let role_permutations = await generateRolePermutations()
+
+    console.log((new Date() - start) + "ms")
+
+    start = new Date()
     
     let best = null
 
@@ -48,7 +54,7 @@ export const findMatch = async () => {
                                         if (best === null) {
                                             best = {expected_outcome: expected, outcome_deviation: outcome_deviation, avg_matchup_deviation: average_deviation, game: [t,j,m,a,s]}
                                         } else {
-                                            if (outcome_deviation  <= best.outcome_deviation && average_deviation < best.avg_matchup_deviation)  {
+                                            if (outcome_deviation  <= best.outcome_deviation && average_deviation <= best.avg_matchup_deviation)  {
                                                 best = {expected_outcome: expected, outcome_deviation: outcome_deviation, avg_matchup_deviation: average_deviation, game: [t,j,m,a,s]}
                                                 if (outcome_deviation <= OUTCOME_DEVIATION_THRESHOLD && average_deviation <= MATCHUP_DEVIATION_THRESHOLD) {
                                                     complete = true
@@ -64,6 +70,8 @@ export const findMatch = async () => {
             }							
         })
     })
+
+    console.log((new Date() - start) + "ms")
 
     return best
 }

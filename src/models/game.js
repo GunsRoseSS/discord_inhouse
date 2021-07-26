@@ -8,8 +8,8 @@ const gameSchema = mongoose.Schema({
         team: String, //'red' 'blue'
         role: String,
         champion: String,
-        previousElo: Number,
-        afterGameElo: Number
+        previousElo: {mu: Number, sigma: Number},
+        afterGameElo: {mu: Number, sigma: Number}
     }],
     winner: String,
     date: Date

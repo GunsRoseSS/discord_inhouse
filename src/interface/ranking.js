@@ -3,6 +3,8 @@ import {quickSortPlayers} from "../helpers/sort.js";
 import Ranking from "../models/ranking.js";
 import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js";
 
+import { ordinal } from "openskill"
+
 
 export const getPlayerRanking = async (playerID) => {
     let playerRanking = {
@@ -142,20 +144,20 @@ export const allRoleRanking = async () => { //this is done by directly arranging
     let players = await getUsers();
     let allRoleList = [];
     for (let player of players) {
-        if (player.roles.top.mmr && !(player.roles.top.wins === 0 && player.roles.top.losses === 0)) {
-            allRoleList.push([player._id, 'top', player.roles.top.mmr, player.roles.top.wins, player.roles.top.losses])
+        if (ordinal(player.roles.top.mmr) && !(player.roles.top.wins === 0 && player.roles.top.losses === 0)) {
+            allRoleList.push([player._id, 'top', Math.floor(ordinal(player.roles.top.mmr)), player.roles.top.wins, player.roles.top.losses])
         }
-        if (player.roles.jgl.mmr && !(player.roles.jgl.wins === 0 && player.roles.jgl.losses === 0)) {
-            allRoleList.push([player._id, 'jgl', player.roles.jgl.mmr, player.roles.jgl.wins, player.roles.jgl.losses])
+        if (ordinal(player.roles.jgl.mmr) && !(player.roles.jgl.wins === 0 && player.roles.jgl.losses === 0)) {
+            allRoleList.push([player._id, 'jgl', Math.floor(ordinal(player.roles.jgl.mmr)), player.roles.jgl.wins, player.roles.jgl.losses])
         }
-        if (player.roles.mid.mmr && !(player.roles.mid.wins === 0 && player.roles.mid.losses === 0)) {
-            allRoleList.push([player._id, 'mid', player.roles.mid.mmr, player.roles.mid.wins, player.roles.mid.losses])
+        if (ordinal(player.roles.mid.mmr) && !(player.roles.mid.wins === 0 && player.roles.mid.losses === 0)) {
+            allRoleList.push([player._id, 'mid', Math.floor(ordinal(player.roles.mid.mmr)), player.roles.mid.wins, player.roles.mid.losses])
         }
-        if (player.roles.adc.mmr && !(player.roles.adc.wins === 0 && player.roles.adc.losses === 0)) {
-            allRoleList.push([player._id, 'adc', player.roles.adc.mmr, player.roles.adc.wins, player.roles.adc.losses])
+        if (ordinal(player.roles.adc.mmr) && !(player.roles.adc.wins === 0 && player.roles.adc.losses === 0)) {
+            allRoleList.push([player._id, 'adc', Math.floor(ordinal(player.roles.adc.mmr)), player.roles.adc.wins, player.roles.adc.losses])
         }
-        if (player.roles.sup.mmr && !(player.roles.sup.wins === 0 && player.roles.sup.losses === 0)) {
-            allRoleList.push([player._id, 'sup', player.roles.sup.mmr, player.roles.sup.wins, player.roles.sup.losses])
+        if (ordinal(player.roles.sup.mmr) && !(player.roles.sup.wins === 0 && player.roles.sup.losses === 0)) {
+            allRoleList.push([player._id, 'sup', Math.floor(ordinal(player.roles.sup.mmr)), player.roles.sup.wins, player.roles.sup.losses])
         }
     }
     return quickSortPlayers(allRoleList, 'all')
@@ -183,7 +185,7 @@ export const updateRoleRanking = async () => {
     for (let player of top) {
         topList.push({
             playerID: player._id,
-            mmr: player.roles.top.mmr,
+            mmr: Math.floor(ordinal(player.roles.top.mmr)),
             wins: player.roles.top.wins,
             losses: player.roles.top.losses
         })
@@ -191,7 +193,7 @@ export const updateRoleRanking = async () => {
     for (let player of jgl) {
         jglList.push({
             playerID: player._id,
-            mmr: player.roles.jgl.mmr,
+            mmr: Math.floor(ordinal(player.roles.jgl.mmr)),
             wins: player.roles.jgl.wins,
             losses: player.roles.jgl.losses
         })
@@ -199,7 +201,7 @@ export const updateRoleRanking = async () => {
     for (let player of mid) {
         midList.push({
             playerID: player._id,
-            mmr: player.roles.mid.mmr,
+            mmr: Math.floor(ordinal(player.roles.mid.mmr)),
             wins: player.roles.mid.wins,
             losses: player.roles.mid.losses
         })
@@ -207,7 +209,7 @@ export const updateRoleRanking = async () => {
     for (let player of adc) {
         adcList.push({
             playerID: player._id,
-            mmr: player.roles.adc.mmr,
+            mmr: Math.floor(ordinal(player.roles.adc.mmr)),
             wins: player.roles.adc.wins,
             losses: player.roles.adc.losses
         })
@@ -215,7 +217,7 @@ export const updateRoleRanking = async () => {
     for (let player of sup) {
         supList.push({
             playerID: player._id,
-            mmr: player.roles.sup.mmr,
+            mmr: Math.floor(ordinal(player.roles.sup.mmr)),
             wins: player.roles.sup.wins,
             losses: player.roles.sup.losses
         })

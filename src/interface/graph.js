@@ -6,6 +6,8 @@ import Game from "../models/game.js"
 import { getUserMatchHistory } from "./user.js"
 import { formatDate } from "../helpers/format.js"
 
+import { ordinal } from "openskill"
+
 export const generateRoleGraph = async (role, client, count = 30) => {
     let games = await Game.find()
 
@@ -14,7 +16,7 @@ export const generateRoleGraph = async (role, client, count = 30) => {
 
     games = games.slice(Math.max(games.length - count, 0))
 
-    let start = games[0].date
+    let start = new Date(games[0].date.getTime())
     let end = games[games.length - 1].date
     start.setDate(start.getDate() - 1)
 
@@ -22,15 +24,15 @@ export const generateRoleGraph = async (role, client, count = 30) => {
     games = games.reduce((out, game) => {
         let i = roles.indexOf(role)
         if (game.players[i].id in out) {
-            out[game.players[i].id].push({date: game.date, before: game.players[i].previousElo, after: game.players[i].afterGameElo})
+            out[game.players[i].id].push({date: game.date, before: ordinal(game.players[i].previousElo), after: ordinal(game.players[i].afterGameElo)})
         } else {
-            out[game.players[i].id] = [{date: game.date, before: game.players[i].previousElo, after: game.players[i].afterGameElo}]
+            out[game.players[i].id] = [{date: game.date, before: ordinal(game.players[i].previousElo), after: ordinal(game.players[i].afterGameElo)}]
         }
 
         if (game.players[i + 5].id in out) {
-            out[game.players[i + 5].id].push({date: game.date, before: game.players[i + 5].previousElo, after: game.players[i + 5].afterGameElo})
+            out[game.players[i + 5].id].push({date: game.date, before: ordinal(game.players[i + 5].previousElo), after: ordinal(game.players[i + 5].afterGameElo)})
         } else {
-            out[game.players[i + 5].id] = [{date: game.date, before: game.players[i + 5].previousElo, after: game.players[i + 5].afterGameElo}]
+            out[game.players[i + 5].id] = [{date: game.date, before: ordinal(game.players[i + 5].previousElo), after: ordinal(game.players[i + 5].afterGameElo)}]
         }
         return out
     }, {})
@@ -92,13 +94,15 @@ export const getUserGraphData = async (id, count = 30) => {
 
     let games = await Game.find({$or : matches})
 
+    console.log(games)
+
     games = games.reduce((out, game) => {
 		let player = game.players.find(element => element.id == id)
-		return [...out, {date: game.date, role: player.role, previousElo: player.previousElo, afterGameElo: player.afterGameElo}]
+		return [...out, {date: new Date(game.date.getTime()), role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
 	}, [])
 
     
-    let start = games[0].date
+    let start = new Date(games[0].date.getTime())
     let end = games[games.length - 1].date
     start.setDate(start.getDate() - 1)
 
@@ -120,15 +124,26 @@ const createGraph = async (title, labels, legend, data) => {
     const textColour = "#ffffff"
 
     //F6BD60 = Maximum yellow red
-    //F24333 = Cinnabar (orange-red)
-    //f7f4f3 = isabelline (white-grey)
-    //437c90 = teal blue
-    //d90429 = amarnth red
-    //802392 = dark magenta
-    //456990 = queen blue
-    //6bd425 = lime green
+    //ffff56 = yellow
+    
+    //ff6456 = orange/red
+    //A02D23 = Cinnabar (orange-red)
+    //d90429 = amaranth red
 
-    const colours = ["#ff6456", "#00ffff", "#ff00ff", "#ffcc56", "#00ff00", "#ff9a00", "#f7f4f3", "#6db425", "#437c90", "#d90429"].sort(() => (Math.random() > .5) ? 1 : -1)
+    //00ffff = cyan
+    //437c90 = teal blue
+    //08498E = royal blue
+
+    //802392 = dark magenta
+    //966BA0 = light purple
+
+    //00ff00 = green
+    //6bd425 = lime green
+    //2B600E = apple green
+
+    //c8c8c8 = light gray
+
+    const colours = ["#f6bd60", "#ffff56", "#ff6456", "#a02d23", "#d90429", "#00ffff", "#437c90", "#08498E", "#802392", "#966BA0", "00ff00", "#6bd425", "#2b600e", "#c8c8c8"].sort(() => (Math.random() > .5) ? 1 : -1)
 
     let minValue = Number.MAX_VALUE
     let maxValue = 0

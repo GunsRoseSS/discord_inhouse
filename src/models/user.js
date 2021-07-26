@@ -4,27 +4,27 @@ const userSchema = mongoose.Schema({
 	_id: String,
 	roles: {
 		top: {
-			mmr: Number,
+			mmr: {mu: Number, sigma: Number},
 			wins: Number,
 			losses: Number
 		},
 		jgl: {
-			mmr: Number,
+			mmr: {mu: Number, sigma: Number},
 			wins: Number,
 			losses: Number
 		},
 		mid: {
-			mmr: Number,
+			mmr: {mu: Number, sigma: Number},
 			wins: Number,
 			losses: Number
 		},
 		adc: {
-			mmr: Number,
+			mmr: {mu: Number, sigma: Number},
 			wins: Number,
 			losses: Number
 		},
 		sup: {
-			mmr: Number,
+			mmr: {mu: Number, sigma: Number},
 			wins: Number,
 			losses: Number
 		},

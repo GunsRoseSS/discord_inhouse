@@ -9,6 +9,8 @@ import {updateRoleRanking} from "./ranking.js";
 import { formatDate } from "../helpers/format.js"
 import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js"
 
+import { ordinal } from "openskill";
+
 export const createGame = async (game, champs, winner) => {
 
     let newGame = new Game({
@@ -25,7 +27,7 @@ export const createGame = async (game, champs, winner) => {
         let user = await getUser(player.id)
 
         user.matchHistory.push(newGame._id)
-        user.roles[player.role].mmr += (player.afterGameElo - player.previousElo)
+        user.roles[player.role].mmr = player.afterGameElo
 
         let location = -1
         for (let i = 0; i < user.championStats.length; i++) {
@@ -49,7 +51,7 @@ export const createGame = async (game, champs, winner) => {
             user.championStats[location].losses += 1
         }
 
-        user.championStats[location].mmrDiff += (player.afterGameElo - player.previousElo)
+        user.championStats[location].mmrDiff += Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
 
 
         await user.save()
@@ -66,17 +68,25 @@ const convertToPlayerList = async (game, champs, winner) => {
 
     const roles = ["top", "jgl", "mid", "adc", "sup"]
 
+    let originalElos = {"blue": [], "red": []}
+    let updatedElos = []
+
     for (let i = 0; i < game.length; i++) {
-        const elo1 = await getUserElo(game[i].player1, roles[i])
-        const elo2 = await getUserElo(game[i].player2, roles[i])
+        originalElos.blue.push(await getUserElo(game[i].player1, roles[i]))
+        originalElos.red.push(await getUserElo(game[i].player2, roles[i]))
+    }
+
+    updatedElos = calculateNewElo(originalElos.blue, originalElos.red, winner == "BLUE" ? true : false)
+
+    for (let i = 0; i < game.length; i++) {
 
         blue.push({
             id: game[i].player1,
             team: "BLUE",
             role: roles[i],
             champion: champs["BLUE"][i],
-            previousElo: elo1,
-            afterGameElo: calculateNewElo(elo1, elo2, winner == "BLUE" ? true : false)
+            previousElo: originalElos.blue[i],
+            afterGameElo: updatedElos.blue[i]
         })
 
         red.push({
@@ -84,8 +94,8 @@ const convertToPlayerList = async (game, champs, winner) => {
             team: "RED",
             role: roles[i],
             champion: champs["RED"][i],
-            previousElo: elo2,
-            afterGameElo: calculateNewElo(elo2, elo1, winner == "RED" ? true : false)
+            previousElo: originalElos.red[i],
+            afterGameElo: updatedElos.red[i]
         })
     }
 
@@ -99,7 +109,7 @@ export const getGameEmbed = (game) => {
 
     for (let i = 0; i < game.players.length; i++) {
         let player = game.players[i]
-        let elo_diff = player.afterGameElo - player.previousElo
+        let elo_diff = Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
         if (Math.floor(i / 5) == 0) {
             msg_blue += `${getRoleEmoji(player.role)} \u2800 <@${player.id}> : ${player.champion.split(/(?=[A-Z])/).join(" ")} **${elo_diff < 0 ? "-" : "+"}${Math.abs(elo_diff)}** \n`
         } else {
@@ -164,7 +174,7 @@ export const getMatchHistoryData = async (id) => {
         dates.push(matchData.date)
         roles.push(player.role)
         champions.push(player.champion)
-        mmrGainLoss.push(player.afterGameElo - player.previousElo)
+        mmrGainLoss.push(Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo)))
 
         winLoss.push(player.team == matchData.winner ? "win" : "loss")
 
@@ -226,7 +236,7 @@ export const paginateHistoryEmbed = (historyData) => {
             subList.roles.push(historyData.roles[0]);
             subList.champions.push(emojiNumberSelector(embedNumber) + ': ' + historyData.champions[0]);
             subList.winLoss.push(historyData.winLoss[0]);
-            subList.mmrGainLoss.push(historyData.mmrGainLoss[0]);
+            subList.mmrGainLoss.push(`${historyData.mmrGainLoss[0] < 0 ? "-" : "+"}${Math.abs(historyData.mmrGainLoss[0])}`);
 
             historyData.matches.shift();
             historyData.dates.shift();

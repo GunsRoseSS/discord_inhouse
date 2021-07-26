@@ -1,14 +1,9 @@
 import User from "../models/user.js"
 
-export const createUser = async (id, elo) => {
+export const createUser = async (id) => {
 	//Warning: create users only through the queue command, or it will fuck up your id and therefore everything else.
-	var startingElo;
 
-	if (elo) {
-		startingElo = [elo[0], elo[1], elo[2], elo[3], elo[4]];
-	} else {
-		startingElo = [500, 500, 500, 500, 500];
-	}
+	let start = {mu: 1340, sigma: 280}
 
 	const user = await getUser(id)
 
@@ -17,27 +12,27 @@ export const createUser = async (id, elo) => {
 			_id: id.toString(),
 			roles: {
 				top: {
-					mmr: startingElo[0],
+					mmr: start,
 					wins: 0,
 					losses: 0
 				},
 				jgl: {
-					mmr: startingElo[1],
+					mmr: start,
 					wins: 0,
 					losses: 0
 				},
 				mid: {
-					mmr: startingElo[2],
+					mmr: start,
 					wins: 0,
 					losses: 0
 				},
 				adc: {
-					mmr: startingElo[3],
+					mmr: start,
 					wins: 0,
 					losses: 0
 				},
 				sup: {
-					mmr: startingElo[4],
+					mmr: start,
 					wins: 0,
 					losses: 0
 				},
@@ -49,6 +44,7 @@ export const createUser = async (id, elo) => {
 
 		return newUser
 	}
+
 
 	return user
 }

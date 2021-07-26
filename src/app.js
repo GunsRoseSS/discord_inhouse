@@ -61,6 +61,7 @@ client.on("message", async (message) => {
 
         switch (cmd) {
             case "queue":
+				{
                 message.react('⚔');
 
                 if (args.length === 0) {
@@ -101,6 +102,7 @@ client.on("message", async (message) => {
                 }
 
                 break
+			}
             case "leave":
                 message.react('🏳️');
 
@@ -162,6 +164,8 @@ client.on("message", async (message) => {
             case 'lose':
             case "win":
             case "won":
+			case "loss":
+			case "lose":
                 message.react('💸');
 
                 if (match_playing) {
@@ -331,7 +335,7 @@ client.on("message", async (message) => {
                 break
             case 'champ':
             case 'champion':
-                message.react('🧙‍♀');
+                message.react('🧙‍♀️');
 
                 switch (args.length) {
                     case 1:
@@ -375,10 +379,10 @@ client.on("message", async (message) => {
                             message.channel.send('Have you considered a spelling course? Could not recognise champion.')
                             break
                         }
-                        champion = champion1[0];
+                        champion = champion[0];
 
                         if (args[1].toLowerCase() === 'all') {
-                            embedData = getAllPlayerChampionStats(await getUsers(), champion1);
+                            embedData = getAllPlayerChampionStats(await getUsers(), champion);
 
                             if (embedData) {
                                 embed = new MessageEmbed()
@@ -442,7 +446,7 @@ client.on("message", async (message) => {
                 break
             case 'champs':
             case 'champions':
-                message.react('🧙‍♂');
+                message.react('🧙‍♂️');
 
                 if (args.length < 1) {
                     user_id = message.author.id;
@@ -536,7 +540,11 @@ client.on("message", async (message) => {
             case 'graph':
             case 'mmr_history':
             case 'chart':
+				{
                 message.react('💹');
+
+				let user_id
+				let nickname
 
                 if (args.length == 0) {
                     user_id = message.author.id
@@ -566,7 +574,7 @@ client.on("message", async (message) => {
                     }
                 }
 
-                let img = await generateGraph(id, nickname)
+                let img = await generateGraph(user_id, nickname)
 
                 if (img != "error") {
                     await message.channel.send({files: [`${img}`]});
@@ -577,6 +585,7 @@ client.on("message", async (message) => {
                 }
 
                 break
+			}
             case 'teammates':
                 message.react('🤤');
                 if (args.length < 1) {

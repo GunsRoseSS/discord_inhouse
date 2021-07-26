@@ -25,6 +25,20 @@ export const getStateEmoji = (state) => {
     }
 }
 
+export const emojiGainedSelector = (mmr) => {
+    if (mmr >= 50) {
+        return ":crown:"
+    } else if (mmr >= 30) {
+        return ":thumbup:"
+    } else if (mmr >= 0) {
+        return ":neutral_face:"
+    } else if (mmr >= -30) {
+        return ":skull:"
+    } else {
+        return ":person_in_motorized_wheelchair:"
+    }
+}
+
 export const emojiNumberSelector = (num) => {
     switch (num) {
         case 1 || '1':

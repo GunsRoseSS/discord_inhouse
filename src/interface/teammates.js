@@ -2,7 +2,7 @@
 
 import {getAllGames, getUserGames} from "./games.js";
 import {quickSortPlayers} from "../helpers/sort.js";
-import {emojiNumberSelector} from "../helpers/emoji.js";
+import {emojiNumberSelector, emojiGainedSelector} from "../helpers/emoji.js";
 import {checkPositive} from "../helpers/format.js";
 
 export const getTeammateStats = async (id) => {
@@ -63,7 +63,7 @@ export const convertTeammateDataToEmbed = async (teammateData) => {
         let counter = 0;
         while (teammateData.length !== 0 && counter < 5) {
             let embedNumber = loopCounter * 5 + counter + 1
-            subList.names.push(emojiNumberSelector(embedNumber) + ': ' + teammateData[0].id);
+            subList.names.push(emojiNumberSelector(embedNumber) + ': ' + teammateData[0].id + ': ' + emojiGainedSelector(teammateData[0].mmr));
             subList.winLoss.push(teammateData[0].wins + "/" + teammateData[0].losses);
             subList.mmrGainLoss.push(checkPositive(teammateData[0].mmr));
 

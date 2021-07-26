@@ -1,3 +1,5 @@
+import { ordinal } from "openskill"
+
 export const quickSortPlayers = (players, role) => {
     switch (role) {
         case 'top':
@@ -6,9 +8,9 @@ export const quickSortPlayers = (players, role) => {
         case "adc":
         case "sup":
             players.sort((user1,user2) => {
-                if (user1.roles[role].mmr > user2.roles[role].mmr) {
+                if (ordinal(user1.roles[role].mmr) > ordinal(user2.roles[role].mmr)) {
                     return 1
-                } else if (user1.roles[role].mmr < user2.roles[role].mmr) {
+                } else if (ordinal(user1.roles[role].mmr) < ordinal(user2.roles[role].mmr)) {
                     return -1
                 }
                 return 0
