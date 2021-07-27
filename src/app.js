@@ -534,7 +534,7 @@ client.on("message", async (message) => {
                 nickname = message.guild.member(user_id).displayName;
                 embedData = await getUserChampionStats(user_id);
 
-                if (embedData === []) {
+                if (embedData.length !== 0) {
                     embed = new MessageEmbed()
                         .setTitle(`All champion stats for ${nickname}`)
                         .setColor('6678B8')
