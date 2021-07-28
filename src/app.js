@@ -23,20 +23,15 @@ import {
     updateMatchID,
     getGameByMatchID
 } from "./interface/games.js"
-import {
-    allRoleRanking,
-    embedPlayerRanks,
-    embedRankingPages,
-    getPlayerRanking,
-    getRoleRanking,
-    updateRoleRanking
-} from "./interface/ranking.js"
+
 import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js"
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
 import {checkPositive, formatChampions, formatRoles} from "./helpers/format.js";
 import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
+
+import {getAllRankingEmbed, getUserRankEmbed,getRoleRankEmbed } from "./interface/ranking.js"
 
 dotenv.config()
 
@@ -112,7 +107,6 @@ client.on("message", async (message) => {
 
                 if (!user) {
                     user = await createUser(user_id);
-                    await updateRoleRanking();
                 }
 
                 let roles = formatRoles(args);
@@ -306,8 +300,10 @@ client.on("message", async (message) => {
             case "link":
                 if (args.length > 1) {
                     message.react('⛓');
-                    let success = updateMatchID(args[0], args[1]);
-                    if (success !== null) {
+                    let success = await updateMatchID(args[0], args[1]);
+                    if (success) {
+                        message.channel.send(`Match id set for game ${args[0]} -> ${args[1]}`)
+                    } else {
                         message.channel.send(`Game id ${args[0]} not found, do you need a pair of glasses?`)
                     }
                 } else {
@@ -315,99 +311,71 @@ client.on("message", async (message) => {
                 }
               break
             case 'rank':
-                message.react('👑');
+                {
+                    message.react('👑');
 
-                if (args.length === 0) {
-                    ranking = await getPlayerRanking(message.author.id);
-                    nickname = message.member.displayName;
-                } else {
-                    user_id = args[0].slice(3, args[0].length - 1);
-                    if (await getUser(user_id)) {
-                        ranking = await getPlayerRanking(user_id);
-                        nickname = message.guild.member(user_id).displayName;
+                    let username
+                    let id
+
+                    if (args.length == 0) {
+                        id = message.author.id
+                        username = message.guild.member(id).displayName
                     } else {
-                        message.channel.send('Could not find player in the Database. Have they played a game before?')
-                        break
+                        id = args[0].slice(3, args[0].length - 1)
+
+                        try {
+                            username = message.guild.member(id).displayName
+                        } catch (e) {
+                            message.channel.send("You messed something up you donkey! Is this person even in this server?")
+                            return
+                        }                  
+                    }
+                    
+                    if (await getUser(id)) {
+                        message.channel.send(await getUserRankEmbed(id,username))
+                    } else {
+                        message.channel.send("Huh? You're trying to get a players rank before they've even used the bot? You might need some !help")
                     }
                 }
-                if (!ranking){
-                    message.channel.send(`could not find any games for ${nickname}`);
-                    break
-                }
-
-                embed = new EasyEmbedPages(message.channel,
-                    {
-                        color: 'ff00ff',
-                        title: `Ranks for ${nickname}`,
-                        description: 'Type !ranking or !ranking [role] for role rankings',
-                        pages: [
-                            {
-                                fields: [
-                                    {
-                                        name: "Role & Rank",
-                                        value: embedPlayerRanks(ranking, 'rank'),
-                                        inline: true
-                                    },
-                                    {
-                                        name: "MMR",
-                                        value: embedPlayerRanks(ranking, 'mmr'),
-                                        inline: true
-                                    },
-                                    {
-                                        name: "Win/Loss",
-                                        value: embedPlayerRanks(ranking, 'winLoss'),
-                                        inline: true
-                                    }
-                                ]
-                            }
-                        ]
-                    })
-                embed.start({
-                    channel: message.channel,
-                    person: message.author
-                });
                 break
             case "notepic":
+            case "riot":
                 message.channel.send(":poop:")
                 break
             case 'ranking':
-                message.react('🏅');
+                {
+                    message.react('🏅');
 
-                if (args.length === 0) {
-                    let ranking = await allRoleRanking();
-                    let pages = embedRankingPages(ranking, true)
-
-                    const rankEmbed = new EasyEmbedPages(message.channel,
-                        {
-                            color: 'ff77ff',
-                            title: `Ranks for all roles`,
-                            description: 'Type !ranking [role] for a specific role',
-                            pages: pages,
-                            allowStop: true,
-                            time: 300000,
-                            ratelimit: 1500
-                        })
-                    rankEmbed.start();
-                } else {
-                    let role = formatRoles([args[0]]);
-                    if (role.length > 0) {
-                        let ranking = await getRoleRanking(role[0]);
-                        let pages = embedRankingPages(ranking, false)
-
-                        const rankEmbed = new EasyEmbedPages(message.channel,
+                    if (args.length == 0) {
+                        let embed = new EasyEmbedPages(message.channel,
                             {
-                                color: 'aa77ff',
-                                title: `Ranks for ${role[0]}`,
-                                description: 'Type !ranking for a ranking of all roles.',
-                                pages: pages,
-                                allowStop: true,
+                                color: 'ff77ff',
+                                title: `Ranking for all roles`,
+                                description: 'Type !ranking [role] for a specific role',
+                                pages: await getAllRankingEmbed(),
+                                allowStop: false,
                                 time: 300000,
-                                ratelimit: 1500
-                            }
-                        )
-                        rankEmbed.start();
+                                ratelimit: 500
+                            })
+                        embed.start()
                     } else {
-                        message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
+                        let role = formatRoles([args[0]])
+
+                        if (role.length > 0) {
+                            let embed = new EasyEmbedPages(message.channel,
+                                {
+                                    color: 'aa77ff',
+                                    title: `Ranking for ${role[0]}`,
+                                    description: 'Type !ranking for a ranking of all roles',
+                                    pages: await getRoleRankEmbed(role[0]),
+                                    allowStop: false,
+                                    time: 300000,
+                                    ratelimit: 500
+                                })
+                            embed.start()
+                        } else {
+                            message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
+                        }
                     }
                 }
                 break
@@ -700,6 +668,19 @@ client.on("message", async (message) => {
                     person: message.author
                 })
 
+                break
+            case "uwu":
+                {
+                    message.channel.send("OwO", {files: ["https://cdn.discordapp.com/attachments/867139767099719700/869764744381345822/alex_owo.png"]})
+                }
+                break
+            case "turboint":
+            case "int":
+            case "shame":
+            case "l9":
+                {
+                    message.channel.send({files: ["https://cdn.discordapp.com/attachments/863014796915638296/869765947068649492/l9.png"]})
+                }
                 break
             default:
                 message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')

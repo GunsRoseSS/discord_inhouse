@@ -13,7 +13,7 @@ const misc = [//this way it's easier to edit help in case we need to update it.
     },
     {
         name: '!notepic',
-        aliases: '-',
+        aliases: '!riot',
         description: 'not epic'
     },
     {

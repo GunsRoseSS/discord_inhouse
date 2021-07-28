@@ -4,7 +4,6 @@ import Game from "../models/game.js";
 
 import {getUser, getUserElo, getUserMatchHistory} from "./user.js"
 import {calculateNewElo} from "./matchup.js";
-import {updateRoleRanking} from "./ranking.js";
 
 import { formatDate } from "../helpers/format.js"
 import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js"
@@ -56,8 +55,6 @@ export const createGame = async (game, champs, winner) => {
 
         await user.save()
     }
-
-    updateRoleRanking()
 
     return newGame
 }
