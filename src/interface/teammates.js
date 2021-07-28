@@ -1,5 +1,3 @@
-//kiwi sucks pipi haha!
-
 import {getAllGames, getUserGames} from "./games.js";
 import {quickSortPlayers} from "../helpers/sort.js";
 import {emojiNumberSelector, emojiGainedSelector} from "../helpers/emoji.js";
