@@ -1,5 +1,5 @@
 # Discord Inhouse Bot
-A discord bot for managing in-house League of Legends matches. Inspired by mrtoklein's [inhouse bot](https://github.com/mrtolkien/inhouse_bot)
+A Discord bot for managing in-house League of Legends matches. Inspired by mrtoklein's [inhouse bot](https://github.com/mrtolkien/inhouse_bot)
 ## Features
 * Ability to queue for roles
 * Matchmaking system
@@ -16,7 +16,8 @@ A discord bot for managing in-house League of Legends matches. Inspired by mrtok
     * Go the the bot tab
     * Copy token
 * Create .env file in root directory
-    * Add entries for BOT_TOKEN, DB_HOST, DB_NAME, DB_USER, DB_PASS
+    * Add entry for BOT_TOKEN with your Discord token 
+    * Create entries for DB_HOST, DB_NAME, DB_USER, DB_PASS with your MongoDB database info
 * Finally, run `npm start` to start the application
 ## Usage
 ```javascript
