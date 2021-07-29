@@ -188,12 +188,12 @@ export const getMatchHistoryData = async (id) => {
     }
 
     return {
-        matches: newMatches,
-        dates: dates,
-        roles: roles,
-        champions: champions,
-        winLoss: winLoss,
-        mmrGainLoss: mmrGainLoss
+        matches: newMatches.reverse(),
+        dates: dates.reverse(),
+        roles: roles.reverse(),
+        champions: champions.reverse(),
+        winLoss: winLoss.reverse(),
+        mmrGainLoss: mmrGainLoss.reverse()
     }
 }
 
@@ -211,10 +211,18 @@ export const convertMatchHistoryToEmbed = (name, historyData) => {
         return champ.split(/(?=[A-Z])/).join(" ")
     })
 
-    return paginateHistoryEmbed(historyData)
+    let links = historyData.matches.map(match => {
+        if (match > 10000){
+            return `https://matchhistory.euw.leagueoflegends.com/en/#match-details/EUW1/${match}`
+        } else {
+            return `No matchID linked.`
+        }
+    })
+
+    return paginateHistoryEmbed(historyData, links)
 }
 
-export const paginateHistoryEmbed = (historyData) => {
+export const paginateHistoryEmbed = (historyData, links) => {
     let pages = [];
 
     let done = false;
@@ -228,7 +236,8 @@ export const paginateHistoryEmbed = (historyData) => {
             roles: [],
             champions: [],
             winLoss: [],
-            mmrGainLoss: []
+            mmrGainLoss: [],
+            links: []
         }
         let counter = 0;
         while (historyData.matches.length !== 0 && counter < 5) {
@@ -239,6 +248,7 @@ export const paginateHistoryEmbed = (historyData) => {
             subList.champions.push(emojiNumberSelector(embedNumber) + ': ' + historyData.champions[0]);
             subList.winLoss.push(historyData.winLoss[0]);
             subList.mmrGainLoss.push(`${historyData.mmrGainLoss[0] < 0 ? "-" : "+"}${Math.abs(historyData.mmrGainLoss[0])}`);
+            subList.links.push(emojiNumberSelector(embedNumber) + ': ' + links[0])
 
             historyData.matches.shift();
             historyData.dates.shift();
@@ -246,6 +256,7 @@ export const paginateHistoryEmbed = (historyData) => {
             historyData.champions.shift();
             historyData.winLoss.shift();
             historyData.mmrGainLoss.shift();
+            links.shift();
 
             counter += 1;
         }
@@ -284,13 +295,13 @@ export const paginateHistoryEmbed = (historyData) => {
                 },
                 {
                     name: 'How to view Match History',
-                    value: 'In order to view your match, click on the link below and log in. Then,' +
-                        'click on any of your matches and replace the FIRST set of numbers with your match ID.',
+                    value: 'Click on the match link below. Make sure you are logged into the site. ' +
+                        'People that did not participate in the game might not be able to see the game.',
                     inline: false
                 },
                 {
                     name: 'Link',
-                    value: 'https://matchhistory.euw.leagueoflegends.com/en/',
+                    value: subList.links.join("\n"),
                     inline: false
                 }
             ]
