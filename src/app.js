@@ -62,7 +62,7 @@ client.on("message", async (message) => {
     if (message.author.bot) return
     let user_id, user, embedData, nickname, embed, champion, pages;
     if (message.content.startsWith("!")) {
-        var [cmd, ...args] = message.content.trim().substring(1).toLowerCase().split(/\s+/)
+        var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
             case "queue":
