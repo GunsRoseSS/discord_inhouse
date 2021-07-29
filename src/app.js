@@ -357,7 +357,10 @@ client.on("message", async (message) => {
                                 time: 300000,
                                 ratelimit: 500
                             })
-                        embed.start()
+                        embed.start({
+                            channel: message.channel,
+                            author: message.author
+                        })
                     } else {
                         let role = formatRoles([args[0]])
 
@@ -372,7 +375,10 @@ client.on("message", async (message) => {
                                     time: 300000,
                                     ratelimit: 500
                                 })
-                            embed.start()
+                            embed.start({
+                                channel: message.channel,
+                                author: message.author
+                            })
                         } else {
                             message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
                         }
