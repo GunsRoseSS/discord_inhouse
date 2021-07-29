@@ -32,6 +32,7 @@ import {checkPositive, formatChampions, formatRoles} from "./helpers/format.js";
 import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
 
 import {getAllRankingEmbed, getUserRankEmbed,getRoleRankEmbed } from "./interface/ranking.js"
+import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js";
 
 dotenv.config()
 
@@ -46,17 +47,20 @@ let match_playing = false
 let initiator = null
 let winner = null
 let champs = {}
+let userList = undefined;
 
-client.on("ready", () => {
-    // client.channels.fetch("863014796915638296").then(channel => {
-    // 	channel.send("Discord bot restarted and online!")
-    // })
-    console.log('Loaded!')
+client.on("ready", async() => {
+    userList = await fetchGuildMemberNicknames(client);
+    console.log('Loaded!');
+})
+
+client.on("guildMemberAdd", async() => {
+    userList = await fetchGuildMemberNicknames(client);
 })
 
 client.on("message", async (message) => {
     if (message.author.bot) return
-    let user_id, user, embedData, ranking, nickname, embed, champion, pages;
+    let user_id, user, embedData, nickname, embed, champion, pages;
     if (message.content.startsWith("!")) {
         var [cmd, ...args] = message.content.trim().substring(1).toLowerCase().split(/\s+/)
 
@@ -264,22 +268,25 @@ client.on("message", async (message) => {
             case 'history':
                 message.react('📖')
 
+                user_id = message.author.id
+                nickname = getMemberNickname(user_id, userList)
+
                 if (args.length > 0) {
                     message.channel.send('You can only look up history for yourself (dabs)');
                     break
                 }
 
-                embedData = await getMatchHistoryData(message.author.id)
+                embedData = await getMatchHistoryData(user_id)
 
                 if (!embedData.matches[0]) {
                     message.channel.send('You have not played any matches yet.')
                     break
                 }
 
-                pages = convertMatchHistoryToEmbed(message.member.displayName, embedData)
+                pages = convertMatchHistoryToEmbed(nickname, embedData)
                 embed = new EasyEmbedPages(message.channel,
                     {
-                        title: `:book: Match history for ${message.member.displayName} :book:`,
+                        title: `:book: Match history for ${nickname} :book:`,
                         color: '0099ff',
                         pages: pages,
                         allowStop: true,
@@ -318,13 +325,13 @@ client.on("message", async (message) => {
                     let id
 
                     if (args.length == 0) {
-                        id = message.author.id
-                        username = message.guild.member(id).displayName
+                        id = message.author.id;
+                        username = getMemberNickname(id, userList);
                     } else {
                         id = args[0].slice(3, args[0].length - 1)
 
                         try {
-                            username = message.guild.member(id).displayName
+                            username = getMemberNickname(id, userList);
                         } catch (e) {
                             message.channel.send("You messed something up you donkey! Is this person even in this server?")
                             return
@@ -399,7 +406,7 @@ client.on("message", async (message) => {
                         champion = champion[0];
 
                         user_id = message.author.id;
-                        nickname = message.guild.member(user_id).displayName;
+                        nickname = getMemberNickname(user_id, userList);
                         embedData = await getUserChampionStats(user_id, champion);
 
                         if (embedData) {
@@ -465,7 +472,7 @@ client.on("message", async (message) => {
                             }
                         } else {
                             user_id = args[1].slice(3, args[1].length - 1);
-                            nickname = message.guild.member(user_id).displayName;
+                            nickname = getMemberNickname(user_id, userList);
                             embedData = await getUserChampionStats(user_id, champion);
 
                             if (embedData) {
@@ -505,7 +512,7 @@ client.on("message", async (message) => {
                 } else {
                     user_id = args[0].slice(3, args[0].length - 1);
                 }
-                nickname = message.guild.member(user_id).displayName;
+                nickname = getMemberNickname(user_id, userList);
                 embedData = await getUserChampionStats(user_id);
 
                 if (embedData.length !== 0) {
@@ -599,7 +606,7 @@ client.on("message", async (message) => {
 
                 if (args.length == 0) {
                     user_id = message.author.id
-                    nickname = message.member.displayName
+                    nickname = getMemberNickname(user_id, userList);
 
                     user = await getUser(user_id);
                     if (user !== null){
@@ -615,7 +622,7 @@ client.on("message", async (message) => {
                     let role = formatRoles([args[0]])
 
                     if (role[0]) {
-                        let img = await generateRoleGraph(role[0], client)
+                        let img = await generateRoleGraph(role[0], client, userList)
 
                         if (img != "error") {
                             await message.channel.send({files: [`${img}`]})
@@ -630,7 +637,7 @@ client.on("message", async (message) => {
                     user_id = args[0].slice(3, args[0].length - 1)
 
                     try {
-                        nickname = message.guild.member(user_id).displayName
+                        nickname = getMemberNickname(user_id, userList);
                     } catch (e) {
                         nickname = 'error';
                     }
@@ -655,7 +662,7 @@ client.on("message", async (message) => {
                 } else {
                     user_id = args[0].slice(3, args[0].length - 1);
                 }
-                nickname = message.guild.member(user_id).displayName;
+                nickname = getMemberNickname(user_id, userList);
                 embedData = await getTeammateStats(user_id);
                 pages = await convertTeammateDataToEmbed(embedData);
                 let teammateEmbed = new EasyEmbedPages(message.channel,

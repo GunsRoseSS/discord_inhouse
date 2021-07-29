@@ -7,8 +7,9 @@ import { getUserMatchHistory } from "./user.js"
 import { formatDate } from "../helpers/format.js"
 
 import { ordinal } from "openskill"
+import {getMemberNickname} from "../helpers/discord.js";
 
-export const generateRoleGraph = async (role, client, count = 30) => {
+export const generateRoleGraph = async (role, client, userList, count = 30) => {
     let games = await Game.find();
 
     if (!games){
@@ -18,11 +19,11 @@ export const generateRoleGraph = async (role, client, count = 30) => {
     const roles = ["top", "jgl", "mid", "adc", "sup"]
     const roles_full = ["Top", "Jungle", "Middle", "ADC", "Support"]
 
-    games = games.slice(Math.max(games.length - count, 0))
+    games = games.slice(Math.max(games.length - count, 0));
 
-    let start = new Date(games[0].date.getTime())
-    let end = games[games.length - 1].date
-    start.setDate(start.getDate() - 1)
+    let start = new Date(games[0].date.getTime());
+    let end = games[games.length - 1].date;
+    start.setDate(start.getDate() - 1);
 
     //Retrieve the data for the players in the specified role
     games = games.reduce((out, game) => {
@@ -48,9 +49,8 @@ export const generateRoleGraph = async (role, client, count = 30) => {
         let user = Object.keys(games)[i]
         try {
             user = await client.users.fetch(Object.keys(games)[i])
-            user = user.username
+            user = getMemberNickname(user.id, userList);
         } catch (e) {}
-        
         users.push(user)
     }
 
@@ -68,7 +68,7 @@ export const generateRoleGraph = async (role, client, count = 30) => {
 export const generateGraph = async (id, nickname, count = 30) => {
     let data = await getUserGraphData(id)
 
-    if (data == null) {
+    if (data === undefined) {
         return "error"
     }
 
@@ -97,8 +97,6 @@ export const getUserGraphData = async (id, count = 30) => {
 	}, [])
 
     let games = await Game.find({$or : matches})
-
-    console.log(games)
 
     games = games.reduce((out, game) => {
 		let player = game.players.find(element => element.id == id)
