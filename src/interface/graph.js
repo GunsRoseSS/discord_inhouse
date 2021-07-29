@@ -1,5 +1,4 @@
 import ChartJSImage from "chart.js-image"
-import https from "https"
 
 import Game from "../models/game.js"
 
@@ -7,9 +6,8 @@ import { getUserMatchHistory } from "./user.js"
 import { formatDate } from "../helpers/format.js"
 
 import { ordinal } from "openskill"
-import {getMemberNickname} from "../helpers/discord.js";
 
-export const generateRoleGraph = async (role, client, userList, count = 30) => {
+export const generateRoleGraph = async (role, userList, count = 30) => {
     let games = await Game.find();
 
     if (!games){
@@ -47,11 +45,7 @@ export const generateRoleGraph = async (role, client, userList, count = 30) => {
 
     for (let i=0;i<Object.keys(games).length;i++) {
         let user = Object.keys(games)[i]
-        try {
-            user = await client.users.fetch(Object.keys(games)[i])
-            user = getMemberNickname(user.id, userList);
-        } catch (e) {}
-        users.push(user)
+        users.push(userList[user])
     }
 
     games = Object.keys(games).reduce((out, key, i) => {

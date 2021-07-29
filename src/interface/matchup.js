@@ -26,7 +26,7 @@ export const getMatchups = async (role,players) => {
 }
 
 export const calculateExpectedOutcome = (elo1, elo2) => {
-	return 1 / (1 + Math.pow(10, (elo2 - elo1)/500))
+	return 1 / (1 + Math.pow(5, (elo2 - elo1)/500))
 }
 
 export const calculateNewElo = (team1, team2, win) => {

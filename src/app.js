@@ -50,6 +50,7 @@ let champs = {}
 let userList = undefined;
 
 client.on("ready", async() => {
+    console.log("Bot started, fetching guild members")
     userList = await fetchGuildMemberNicknames(client);
     console.log('Loaded!');
 })
@@ -189,6 +190,8 @@ client.on("message", async (message) => {
                         message.channel.send(`Not enough players in queue, need ${10 - count} more`)
                         return
                     }
+
+                    console.log("Finding match")
 
                     current_match = await findMatch()
 
@@ -622,7 +625,7 @@ client.on("message", async (message) => {
                     let role = formatRoles([args[0]])
 
                     if (role[0]) {
-                        let img = await generateRoleGraph(role[0], client, userList)
+                        let img = await generateRoleGraph(role[0], userList)
 
                         if (img != "error") {
                             await message.channel.send({files: [`${img}`]})
