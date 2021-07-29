@@ -96,6 +96,10 @@ export const getUserRankEmbed = async (id, nickname) => {
         ratio_msg += `${role.wins}/${role.losses} \n`
     })
 
+    role_msg = role_msg.length == 0 ? "N/A" : role_msg
+    mmr_msg = mmr_msg.length == 0 ? "N/A" : mmr_msg
+    ratio_msg = ratio_msg.length == 0 ? "N/A" : ratio_msg
+
     embed.addField("Role & Rank", role_msg, true)
     embed.addField("MMR", mmr_msg, true)
     embed.addField("Win/Loss", ratio_msg, true)
