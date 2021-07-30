@@ -33,6 +33,7 @@ import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammate
 
 import {getAllRankingEmbed, getUserRankEmbed,getRoleRankEmbed } from "./interface/ranking.js"
 import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js";
+import {quickSortPlayers} from "./helpers/sort.js";
 
 dotenv.config()
 
@@ -517,6 +518,7 @@ client.on("message", async (message) => {
                 }
                 nickname = getMemberNickname(user_id, userList);
                 embedData = await getUserChampionStats(user_id);
+                embedData = quickSortPlayers(embedData, 'champStats');
 
                 if (embedData.length !== 0) {
                     embed = new MessageEmbed()
