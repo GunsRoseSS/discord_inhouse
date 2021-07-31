@@ -24,7 +24,12 @@ import {
     getGameByMatchID
 } from "./interface/games.js"
 
-import {championDataToEmbed, fetchChampionIcon, getAllPlayerChampionStats} from "./interface/champion.js"
+import {
+    championDataToEmbed,
+    fetchChampionIcon,
+    getAllPlayerChampionStats,
+    getPaginatedChampionEmbed
+} from "./interface/champion.js"
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
@@ -513,10 +518,44 @@ client.on("message", async (message) => {
 
                 if (args.length < 1) {
                     user_id = message.author.id;
+
                 } else {
+                    if (args[0].toLowerCase() === 'all') {
+                        let allChampData = [];
+                        let users = await getUsers();
+                        for (let user of users) {
+                            let champData = await getUserChampionStats(user._id);
+
+                            for (let champ of champData){
+                                allChampData.push({
+                                    id: user._id,
+                                    name: champ.name,
+                                    mmrDiff: champ.mmrDiff,
+                                    wins: champ.wins,
+                                    losses: champ.losses
+                                });
+                            }
+                        }
+
+                        if (allChampData.length !== 0) {
+                            embed = getPaginatedChampionEmbed(message, quickSortPlayers(allChampData, 'champStats'));
+
+                            embed.start({
+                                channel: message.channel,
+                                author: message.author
+                            })
+                        } else {
+                            message.channel.send('No games have been played yet.')
+                        }
+                        break
+                    }
                     user_id = args[0].slice(3, args[0].length - 1);
                 }
                 nickname = getMemberNickname(user_id, userList);
+                if (nickname === null) {
+                    message.channel.send('Could not find user.');
+                    break
+                }
                 embedData = await getUserChampionStats(user_id);
                 embedData = quickSortPlayers(embedData, 'champStats');
 
@@ -689,7 +728,7 @@ client.on("message", async (message) => {
                 break
             case "uwu":
                 {
-                    message.channel.send("OwO", {files: ["https://cdn.discordapp.com/attachments/867139767099719700/869764744381345822/alex_owo.png"]})
+                    message.channel.send("OwO", {files: ["https://cdn.discordapp.com/attachments/287347623139082240/871056038927941653/alex_owo.png"]})
                 }
                 break
             case "turboint":
@@ -697,7 +736,7 @@ client.on("message", async (message) => {
             case "shame":
             case "l9":
                 {
-                    message.channel.send({files: ["https://cdn.discordapp.com/attachments/863014796915638296/869765947068649492/l9.png"]})
+                    message.channel.send({files: ["https://cdn.discordapp.com/attachments/287347623139082240/871055953003425863/l9.png"]})
                 }
                 break
             default:
