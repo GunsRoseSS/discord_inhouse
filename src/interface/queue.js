@@ -43,9 +43,9 @@ export const playersInRole = async (role) => {
 
 export const getQueueEmbed = async () => {
 	const roles = ["top", "jgl", "mid", "adc", "sup"]
-
+	
 	let queue_embed = new MessageEmbed()
-	.setTitle("Current queue")
+	.setTitle(`Current queue ${(await playersInQueue()).length}/10`)
 	.setColor("#FF0F00")
 
 	let msg = ""
@@ -55,6 +55,7 @@ export const getQueueEmbed = async () => {
 
 		msg += `${getRoleEmoji(role)} \u2800 ${players.join(", ")} \n`
 	}
+
 
 	queue_embed.setDescription(msg)
 

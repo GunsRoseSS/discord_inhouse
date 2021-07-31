@@ -33,7 +33,7 @@ import {
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
-import {checkPositive, formatChampions, formatRoles} from "./helpers/format.js";
+import {checkPositive, formatChampions, formatRoles, getChampionName} from "./helpers/format.js";
 import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
 
 import {getAllRankingEmbed, getUserRankEmbed,getRoleRankEmbed } from "./interface/ranking.js"
@@ -420,7 +420,7 @@ client.on("message", async (message) => {
 
                         if (embedData) {
                             embed = new MessageEmbed()
-                                .setTitle(`${champion} stats for ${nickname}`)
+                                .setTitle(`${getChampionName(champion)} stats for ${nickname}`)
                                 .setColor('ab12ef')
                                 .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.')
                                 .setThumbnail(fetchChampionIcon(champion))
@@ -437,7 +437,7 @@ client.on("message", async (message) => {
 
                             message.channel.send(embed);
                         } else {
-                            message.channel.send(`You have not played ${champion} before.`)
+                            message.channel.send(`You have not played ${getChampionName(champion)} before.`)
                         }
 
                         break
@@ -454,7 +454,7 @@ client.on("message", async (message) => {
 
                             if (embedData) {
                                 embed = new MessageEmbed()
-                                    .setTitle(`${champion} stats for all players`)
+                                    .setTitle(`${getChampionName(champion)} stats for all players`)
                                     .setColor('ab12ef')
                                     .setDescription('Type **!champion [champion]** to view your own stats for that champion or **!champion [champion] [@player]** to view stats of the champion for another player.')
                                     .setThumbnail(fetchChampionIcon(champion))
@@ -477,7 +477,7 @@ client.on("message", async (message) => {
                                 message.channel.send(embed);
 
                             } else {
-                                message.channel.send(`No players have played ${champion} yet.`)
+                                message.channel.send(`No players have played ${getChampionName(champion)} yet.`)
                             }
                         } else {
                             user_id = args[1].slice(3, args[1].length - 1);
@@ -486,7 +486,7 @@ client.on("message", async (message) => {
 
                             if (embedData) {
                                 embed = new MessageEmbed()
-                                    .setTitle(`${champion} stats for ${nickname}`)
+                                    .setTitle(`${getChampionName(champion)} stats for ${nickname}`)
                                     .setColor('ab12ef')
                                     .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion]** to view your own stats for the champion. for the champion.')
                                     .setThumbnail(fetchChampionIcon(champion))
@@ -504,7 +504,7 @@ client.on("message", async (message) => {
                                 message.channel.send(embed);
 
                             } else {
-                                message.channel.send(`This player hasn't played ${champion} yet.`)
+                                message.channel.send(`This player hasn't played ${getChampionName(champion)} yet.`)
                             }
                         }
                         break
@@ -529,7 +529,7 @@ client.on("message", async (message) => {
                             for (let champ of champData){
                                 allChampData.push({
                                     id: user._id,
-                                    name: champ.name,
+                                    name: getChampionName(champ.name),
                                     mmrDiff: champ.mmrDiff,
                                     wins: champ.wins,
                                     losses: champ.losses

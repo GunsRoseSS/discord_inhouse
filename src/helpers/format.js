@@ -38,6 +38,29 @@ export const formatUsers = (users) => {
 	}, [])
 }
 
+export const getChampionName = (champion) => {
+	champion = champion.split(/(?=[A-Z])/).join(" ")
+	switch(champion) {
+		case "Chogath":
+			return "Cho'Gath"
+		case "Dr Mundo":
+			return "Dr.Mundo"
+		case "Jarvan I V":
+			return "Jarvan IV"
+		case "Kaisa":
+			return "Kai'Sa"
+		case "Khazix":
+			return "Kha'Zix"
+		case "Kogmaw":
+			return "Kog'Maw"
+		case "Reksai":
+			return "Rek'Sai"
+		case "Velkoz":
+			return "Vel'Koz"
+	}
+	return champion
+}
+
 export const formatChampions = (champions) => {
 	const champs = ["AurelionSol", "Akshan", "DrMundo","JarvanIV", "LeeSin", "MasterYi", "MissFortune", "TahmKench", "TwistedFate", "XinZhao", "Aatrox","Ahri","Akali","Alistar","Amumu","Anivia","Annie","Aphelios","Ashe","Azir","Bard","Blitzcrank","Brand","Braum","Caitlyn","Camille","Cassiopeia","Chogath","Corki","Darius","Diana","Draven","Ekko","Elise","Evelynn","Ezreal","Fiddlesticks","Fiora","Fizz","Galio","Gangplank","Garen","Gnar","Gragas","Graves","Gwen", "Hecarim","Heimerdinger","Illaoi","Irelia","Ivern","Janna","Jax","Jayce","Jhin","Jinx","Kaisa","Kalista","Karma","Karthus","Kassadin","Katarina","Kayle","Kayn","Kennen","Khazix","Kindred","Kled","Kogmaw","Leblanc", "Leona","Lillia","Lissandra","Lucian","Lulu","Lux","Malphite","Malzahar","Maokai", "Mordekaiser","Morgana","Nami","Nasus","Nautilus","Neeko","Nidalee","Nocturne","Nunu","Olaf","Orianna","Ornn","Pantheon","Poppy","Pyke","Qiyana","Quinn","Rakan","Rammus","Reksai","Rell","Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine","Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner","Sona","Soraka","Swain","Sylas","Syndra","Taliyah","Talon","Taric","Teemo","Thresh","Tristana","Trundle","Tryndamere","Twitch","Udyr","Urgot","Varus","Vayne","Veigar","Viego", "Velkoz","Vi","Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah","Xerath","Yasuo","Yone","Yorick","Yuumi","Zac","Zed","Ziggs","Zilean","Zoe","Zyra"]
 
@@ -112,6 +135,7 @@ export const formatChampions = (champions) => {
 					temp = ("Blitzcrank")
 					break
 				case "Cait":
+				case "Caitlin":
 					temp = ("Caitlyn")
 					break
 				case "Cass":

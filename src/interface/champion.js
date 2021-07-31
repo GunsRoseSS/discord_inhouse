@@ -1,5 +1,5 @@
 import {quickSortPlayers} from "../helpers/sort.js";
-import {checkPositive} from "../helpers/format.js";
+import {checkPositive, getChampionName} from "../helpers/format.js";
 import {emojiNumberSelector} from "../helpers/emoji.js";
 import EasyEmbedPages from 'easy-embed-pages';
 
@@ -36,7 +36,7 @@ export const championDataToEmbed = (playersData, type) => { //consistency? fuck 
                 embedString = embedString + emojiNumberSelector(counter) + '<@' + player.player + '>' + '\n';
                 break
             case 'champion':
-                embedString = embedString + player.name + '\n';
+                embedString = embedString + getChampionName(player.name) + '\n';
                 break
             case 'mmr':
                 embedString = embedString + checkPositive(player.mmrDiff).toString() + '\n';
@@ -63,7 +63,7 @@ export const getPaginatedChampionEmbed = (message, embedData) => {
 
     embedData.forEach((data, index) => {
         rank_msg += `${emojiNumberSelector(index+1)}: <@${data.id}>\n`
-        champ_msg += `${data.name} \n`
+        champ_msg += `${getChampionName(data.name)} \n`
         mmr_msg += `${checkPositive(data.mmrDiff)}, ${data.wins}/${data.losses} \n`
 
         if ((index+1) % PAGE_SIZE == 0 || index == embedData.length - 1) {
