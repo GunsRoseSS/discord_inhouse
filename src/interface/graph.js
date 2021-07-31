@@ -139,7 +139,38 @@ const createGraph = async (title, labels, legend, data) => {
 
     //c8c8c8 = light gray
 
-    const colours = ["#f6bd60", "#ffff56", "#ff6456", "#a02d23", "#d90429", "#00ffff", "#437c90", "#08498E", "#802392", "#966BA0", "00ff00", "#6bd425", "#2b600e", "#c8c8c8"].sort(() => (Math.random() > .5) ? 1 : -1)
+    //Randomly sort each colour array
+    let yellows = ["#f6bd60", "#ffff56"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let reds = ["#ff6456", "#a02d23", "#d90429"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let blues = ["#00ffff", "#437c90", "#08498E"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let purples = ["#802392", "#966BA0"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let greens = ["#00ff00", "#6bd425", "#2b600e"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let greys = ["#c8c8c8", "#484848"].sort(() => (Math.random() > .5) ? 1 : -1)
+
+    let count = yellows.length + reds.length + blues.length + purples.length + greens.length + greys.length
+
+    let colours = []
+    let available = []
+
+    //Populate the colours array with colours
+    //Cycles through each colour before returning to the same set
+    for (let i=0;i<count;i++) {
+        let selected_colour = null
+
+        if (available.length == 0) {
+            available = [yellows, reds, blues, purples, greens, greys]
+        }
+
+        do {
+            let index = Math.floor(Math.random() * available.length)
+            selected_colour = available[index]
+            available.splice(index, 1)
+        } while (selected_colour.length == 0)
+
+        colours.push(selected_colour[0])
+
+        selected_colour.shift()
+    }
 
     let minValue = Number.MAX_VALUE
     let maxValue = 0
