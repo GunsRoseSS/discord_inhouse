@@ -1,4 +1,4 @@
-import { ordinal } from "openskill"
+import {ordinal} from "openskill"
 
 export const quickSortPlayers = (players, role) => {
     switch (role) {
@@ -51,4 +51,41 @@ export const quickSortPlayers = (players, role) => {
     }
 
     return players.reverse()
+}
+
+export const sortMetaData = (data, type) => {
+    let items = Object.keys(data).map(function(key) {
+        return [key, data[key]];
+    });
+
+    switch (type) {
+        case 'mmr':
+            items.sort(function(first, second) {
+                return second[1].mmrDiff - first[1].mmrDiff;
+            });
+            break
+        case 'pickrate':
+            items.sort(function(first, second) {
+                return second[1].pickRate - first[1].pickRate;
+            });
+            break
+        case 'reverse_mmr':
+            items.sort(function(first, second) {
+                return first[1].mmrDiff - second[1].mmrDiff;
+            });
+            break
+        case 'reverse_pickrate':
+            items.sort(function(first, second) {
+                return first[1].pickRate - second[1].pickRate;
+            });
+            break
+    }
+
+    let sortedData={}
+    items.forEach((arrayData) => {
+        let key = arrayData[0];
+        sortedData[key] = arrayData[1];
+    })
+
+    return(sortedData)
 }

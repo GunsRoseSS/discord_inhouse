@@ -21,7 +21,7 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID
+    getGameByMatchID, getAllGames, getMetaEmbed
 } from "./interface/games.js"
 
 import {
@@ -584,6 +584,41 @@ client.on("message", async (message) => {
                     message.channel.send('You have/This player has not played any champions yet')
                 }
                 break
+            case 'meta':
+            case 'champstats':
+                let type;
+                switch (args.length){
+                    case 0:
+                        type = 'mmr'
+                        break
+                    case 1:
+                        type = args[0].toLowerCase();
+                        break
+                    case 2:
+                        if (args[1].toLowerCase() === 'low') {
+                            type = 'reverse_' + args[0].toLowerCase();
+                        } else {
+                            type = args[0].toLowerCase();
+                        }
+                }
+                if (type !== 'mmr' && type !== 'reverse_mmr' && type !== 'pickrate' && type !== 'reverse_pickrate'){
+                    message.channel.send("I don't know what the fuck you just tried to do, but you did it wrong. Very wrong. Try again: !meta ?[mmr/pickrate] ?[low/high]")
+                    break
+                }
+                let games = await getAllGames();
+
+                embed = getMetaEmbed(message, games, type);
+
+                if (embed){
+                    embed.start({
+                        channel: message.channel,
+                        author: message.author
+                    })
+                    break
+                } else {
+                    message.channel.send('No games have been played so far.')
+                    break
+                }
             case 'help':
             case 'commands':
                 message.react('❓');
@@ -603,16 +638,20 @@ client.on("message", async (message) => {
                             description: convertHelpToEmbed(2)
                         },
                         {
-                            title: ':question: Statistical commands :question;',
+                            title: ':question: Statistical commands part 1 :question;',
                             description: convertHelpToEmbed(3)
                         },
                         {
-                            title: ':question: Match history related commands :question;',
+                            title: ':question: Statistical commands part 2 :question;',
                             description: convertHelpToEmbed(4)
                         },
                         {
-                            title: ':question: Misc. :question;',
+                            title: ':question: Match history related commands :question;',
                             description: convertHelpToEmbed(5)
+                        },
+                        {
+                            title: ':question: Misc. :question;',
+                            description: convertHelpToEmbed(6)
                         },
                     ]
                 })

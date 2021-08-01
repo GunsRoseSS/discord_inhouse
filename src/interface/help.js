@@ -69,17 +69,25 @@ const postGame = [
     }
 ]
 
-const stats = [
+const stats1 = [
     {
         name: '!champion [champion] ?[@player]/?[all]',
         aliases: '!champ',
+        description: 'Displays champion stats for every played champion of yourself, another [@player], or [all] players (which is also kind of a ranking! :P)'
+    },
+    {
+        name: '!champions ?[@player/all]',
+        aliases: '!champs',
         description: 'Displays champion stats for the requested [champion] for yourself, another [@player], or [all] players'
     },
     {
         name: '!ranking ?[role]',
         aliases: '-',
         description: 'Displays the current ranking for all players for all roles (no arguments) or for a specific [role]'
-    },
+    }
+]
+
+const stats2 = [
     {
         name: '!rank ?[@player]/?[role]',
         aliases: '-',
@@ -89,6 +97,11 @@ const stats = [
         name: '!teammates ?[@player]',
         aliases: '-',
         description: "Displays teammate stats for yourself or for a [@player]"
+    },
+    {
+        name: '!meta ?[mmr/pickrate] ?[low/high]',
+        aliases: '!champstats',
+        description: "Displays the current meta for the played champions. The default sorting is by mmr from high to low, but you can change this with the [mmr/pickrate] and [low/high] arguments."
     }
 ]
 
@@ -121,12 +134,15 @@ export const convertHelpToEmbed = (page) => {
             helpArray = postGame
             break
         case 3:
-            helpArray = stats
+            helpArray = stats1
             break
         case 4:
-            helpArray = history
+            helpArray = stats2
             break
         case 5:
+            helpArray = history
+            break
+        case 6:
             helpArray = misc
             break
     }

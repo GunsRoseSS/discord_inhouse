@@ -5,10 +5,12 @@ import Game from "../models/game.js";
 import {getUser, getUserElo, getUserMatchHistory} from "./user.js"
 import {calculateNewElo} from "./matchup.js";
 
-import { formatDate } from "../helpers/format.js"
+import {checkPositive, formatDate, getChampionName} from "../helpers/format.js"
 import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js"
+import EasyEmbedPages from 'easy-embed-pages';
 
 import { ordinal } from "openskill";
+import {sortMetaData} from "../helpers/sort.js";
 
 export const createGame = async (game, champs, winner) => {
 
@@ -313,4 +315,84 @@ export const paginateHistoryEmbed = (historyData, links) => {
         }
     }
     return pages
+}
+
+export const getMetaEmbed = (message, games, type) => {
+    let dictChamps = {
+        'pickRate': 0
+    };
+
+    if (games.length === 0){
+        return null
+    }
+
+    //generate champion dictionary
+    for (let game of games) {
+        for (let player of game.players) {
+            if (dictChamps[player.champion] === undefined) {
+                dictChamps[player.champion] = {
+                    mmrDiff: Math.floor(ordinal({mu: player.afterGameElo.mu, sigma: player.afterGameElo.sigma}) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma})),
+                    wins: player.team === game.winner ? 1 : 0,
+                    losses: player.team !== game.winner ? 1 : 0,
+                    pickRate: 1
+                }
+            } else {
+                dictChamps[player.champion].mmrDiff += Math.floor(ordinal({mu: player.afterGameElo.mu, sigma: player.afterGameElo.sigma}) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma}));
+                dictChamps[player.champion].wins += player.team === game.winner ? 1 : 0;
+                dictChamps[player.champion].losses += player.team !== game.winner ? 1 : 0;
+                dictChamps[player.champion].pickRate += 1;
+            }
+            dictChamps["pickRate"] += 1
+        }
+    }
+
+    dictChamps = sortMetaData(dictChamps, type);
+
+    let pages = [];
+    const PAGE_SIZE = 10;
+    let pickRate_msg = "";
+    let champ_msg = "";
+    let mmr_msg = "";
+
+    Object.entries(dictChamps).forEach(([champion, stats], index) => {
+        if (champion !== 'pickRate') {
+            pickRate_msg += `${Math.round(stats.pickRate / dictChamps["pickRate"] * 100 * 10 * 10) / 10}%\n`
+            champ_msg += `${emojiNumberSelector(index)}: ${getChampionName(champion)} \n`
+            mmr_msg += `${checkPositive(stats.mmrDiff)}, ${stats.wins}/${stats.losses} \n`
+        }
+
+        if (((index) % PAGE_SIZE === 0 && index !== 0) || index === Object.keys(dictChamps).length - 1) {
+            pages.push({fields: [
+                    {
+                        name: "Champion",
+                        value: champ_msg,
+                        inline: true
+                    },
+                    {
+                        name: "MMR & Win/Loss",
+                        value: mmr_msg,
+                        inline: true
+                    },
+                    {
+                        name: "Pick Rate",
+                        value: pickRate_msg,
+                        inline: true
+                    }
+                ]})
+
+            pickRate_msg = ""
+            champ_msg = ""
+            mmr_msg = ""
+        }
+    })
+
+    return new EasyEmbedPages(message.channel, {
+        title: `Meta data for all champions`,
+        description: "",
+        color: 'a83254',
+        allowStop: true,
+        time: 300000,
+        ratelimit: 1500,
+        pages: pages
+    })
 }
