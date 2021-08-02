@@ -9,7 +9,7 @@ import {getChampionName} from "../helpers/format.js";
 
 export const getRanking = async () => {
     //Get all users from the db
-    let users = await User.find({} , "", {lean: true})
+    let users = await User.find({}, "", {lean: true})
 
     //Filters users and outputs a list of objects
     //Each object contains a user id, role, wins, losses and mmr
@@ -87,9 +87,9 @@ export const getUserRankEmbed = async (id, nickname) => {
     let userRanking = await getUserRanking(id)
 
     let embed = new MessageEmbed()
-    .setTitle(`Ranks for ${nickname}`)
-    .setDescription("Type !ranking or !ranking [role] for role rankings")
-    .setColor("#ff00ff")
+        .setTitle(`Ranks for ${nickname}`)
+        .setDescription("Type !ranking or !ranking [role] for role rankings")
+        .setColor("#ff00ff")
 
     let role_msg = ""
     let mmr_msg = ""
@@ -124,28 +124,30 @@ export const getRoleRankEmbed = async (role) => {
     let mmr_msg = ""
 
     roleRanking.forEach((user, index) => {
-        rank_msg += `${emojiNumberSelector(index+1)} \n`
+        rank_msg += `${emojiNumberSelector(index + 1)} \n`
         player_msg += `<@${user.id}> \n`
         mmr_msg += `${Math.floor(user.mmr)}, ${user.wins}/${user.losses} \n`
 
-        if ((index+1) % PAGE_SIZE === 0 || index === roleRanking.length - 1) {
-            pages.push({fields: [
-                {
-                    name: "Rank",
-                    value: rank_msg,
-                    inline: true
-                },
-                {
-                    name: "Player",
-                    value: player_msg,
-                    inline: true
-                },
-                {
-                    name: "MMR & Win/Loss",
-                    value: mmr_msg,
-                    inline: true
-                }
-            ]})
+        if ((index + 1) % PAGE_SIZE === 0 || index === roleRanking.length - 1) {
+            pages.push({
+                fields: [
+                    {
+                        name: "Rank",
+                        value: rank_msg,
+                        inline: true
+                    },
+                    {
+                        name: "Player",
+                        value: player_msg,
+                        inline: true
+                    },
+                    {
+                        name: "MMR & Win/Loss",
+                        value: mmr_msg,
+                        inline: true
+                    }
+                ]
+            })
 
             rank_msg = ""
             player_msg = ""
@@ -170,28 +172,30 @@ export const getAllRankingEmbed = async () => {
     let mmr_msg = ""
 
     ranking.forEach((user, index) => {
-        rank_msg += `${emojiNumberSelector(index+1)} ${getRoleEmoji(user.role)} \n`
+        rank_msg += `${emojiNumberSelector(index + 1)} ${getRoleEmoji(user.role)} \n`
         player_msg += `<@${user.id}> \n`
         mmr_msg += `${Math.floor(user.mmr)}, ${user.wins}/${user.losses} \n`
 
-        if ((index+1) % PAGE_SIZE === 0 || index === ranking.length - 1) {
-            pages.push({fields: [
-                {
-                    name: "Rank & Role",
-                    value: rank_msg,
-                    inline: true
-                },
-                {
-                    name: "Player",
-                    value: player_msg,
-                    inline: true
-                },
-                {
-                    name: "MMR & Win/Loss",
-                    value: mmr_msg,
-                    inline: true
-                }
-            ]})
+        if ((index + 1) % PAGE_SIZE === 0 || index === ranking.length - 1) {
+            pages.push({
+                fields: [
+                    {
+                        name: "Rank & Role",
+                        value: rank_msg,
+                        inline: true
+                    },
+                    {
+                        name: "Player",
+                        value: player_msg,
+                        inline: true
+                    },
+                    {
+                        name: "MMR & Win/Loss",
+                        value: mmr_msg,
+                        inline: true
+                    }
+                ]
+            })
 
             rank_msg = ""
             player_msg = ""
@@ -205,7 +209,7 @@ export const getAllRankingEmbed = async () => {
 export const getAverageRankingData = async () => {
     let users = await getUsers();
     let embedData = [];
-    for (let user of users){
+    for (let user of users) {
         let userData = {
             id: user._id,
             average: 0,
@@ -215,21 +219,20 @@ export const getAverageRankingData = async () => {
         let divideBy = 0;
         Object.entries(user.roles).forEach(([role, data]) => {
             if (role !== '$init') {
-                if (!(data.wins === 0 && data.losses === 0)){
-                    let mmr = Math.floor(ordinal({mu: data.mmr.mu, sigma: data.mmr.sigma}))
-                    userData.average += mmr;
-                    divideBy ++;
-                    if (mmr > userData.best) {
-                        userData.best = mmr;
-                        userData.bestRole = role;
-                    }
+                let mmr = Math.floor(ordinal({mu: data.mmr.mu, sigma: data.mmr.sigma}))
+                userData.average += mmr;
+                divideBy++;
+                if (mmr === userData.best) {
+                    userData.bestRole += `,${role}`;
+                }
+                if (mmr > userData.best) {
+                    userData.best = mmr;
+                    userData.bestRole = role;
                 }
             }
         })
-        if (divideBy !== 0){
-            userData.average = Math.round(userData.average / divideBy);
-            embedData.push(userData);
-        }
+        userData.average = Math.round(userData.average / divideBy);
+        embedData.push(userData);
     }
     embedData = quickSortPlayers(embedData, 'average');
 
@@ -240,12 +243,18 @@ export const getAverageRankingData = async () => {
     let best_msg = "";
 
     embedData.forEach((player, index) => {
-        player_msg += `${emojiNumberSelector(index+1)} : <@${player.id}> \n`
+        let roleArray = player.bestRole.split(',');
+        let emojis = '';
+        for (let role of roleArray) {
+            emojis += `${getRoleEmoji(role)} `;
+        }
+        player_msg += `${emojiNumberSelector(index + 1)} : <@${player.id}> \n`
         average_msg += `${player.average} \n`
-        best_msg += `${getRoleEmoji(player.bestRole)} ${player.best}\n`
+        best_msg += `${emojis} ${player.best}\n`
 
-        if ((index+1) % PAGE_SIZE === 0 || index === embedData.length - 1) {
-            pages.push({fields: [
+        if ((index + 1) % PAGE_SIZE === 0 || index === embedData.length - 1) {
+            pages.push({
+                fields: [
                     {
                         name: "Player",
                         value: player_msg,
@@ -261,7 +270,8 @@ export const getAverageRankingData = async () => {
                         value: best_msg,
                         inline: true
                     }
-                ]})
+                ]
+            })
 
             player_msg = ""
             average_msg = ""
@@ -269,8 +279,8 @@ export const getAverageRankingData = async () => {
         }
     })
     return {
-        title: 'Ranking for the average elo of every player.',
-        description: "Roles that you haven't played aren't counted.",
+        title: ':first_place: Ranking for the average elo of every player :first_place:',
+        description: "Roles that you haven't played are also included.",
         colour: "#f5b642",
         pages: pages
     }
