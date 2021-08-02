@@ -81,10 +81,11 @@ const stats1 = [
         description: 'Displays champion stats for the requested [champion] for yourself, another [@player], or [all] players'
     },
     {
-        name: '!ranking ?[role]',
-        aliases: '-',
-        description: 'Displays the current ranking for all players for all roles (no arguments) or for a specific [role]'
+        name: '!meta ?[mmr/pickrate] ?[low/high]',
+        aliases: '!champstats',
+        description: "Displays the current meta for the played champions. The default sorting is by mmr from high to low, but you can change this with the [mmr/pickrate] and [low/high] arguments."
     }
+
 ]
 
 const stats2 = [
@@ -94,14 +95,14 @@ const stats2 = [
         description: "Displays your current rank for all your roles. You can also view another [@player]'s rank."
     },
     {
+        name: '!ranking ?[role/average]',
+        aliases: '-',
+        description: 'Displays the current ranking for all players for all roles (no arguments) or for a specific [role] or for your [average] mmr'
+    },
+    {
         name: '!teammates ?[@player]',
         aliases: '-',
         description: "Displays teammate stats for yourself or for a [@player]"
-    },
-    {
-        name: '!meta ?[mmr/pickrate] ?[low/high]',
-        aliases: '!champstats',
-        description: "Displays the current meta for the played champions. The default sorting is by mmr from high to low, but you can change this with the [mmr/pickrate] and [low/high] arguments."
     }
 ]
 
