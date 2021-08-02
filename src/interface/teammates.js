@@ -61,8 +61,8 @@ export const convertTeammateDataToEmbed = async (teammateData) => {
             mmrGainLoss: []
         }
         let counter = 0;
-        while (teammateData.length !== 0 && counter < 5) {
-            let embedNumber = loopCounter * 5 + counter + 1
+        while (teammateData.length !== 0 && counter < 10) {
+            let embedNumber = loopCounter * 10 + counter + 1
             subList.names.push(emojiNumberSelector(embedNumber) + ': ' + teammateData[0].id + ': ' + emojiGainedSelector(teammateData[0].mmr));
             subList.winLoss.push(teammateData[0].wins + "/" + teammateData[0].losses);
             subList.mmrGainLoss.push(checkPositive(teammateData[0].mmr));

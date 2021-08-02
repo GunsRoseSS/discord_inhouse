@@ -69,19 +69,6 @@ client.on("message", async (message) => {
         var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
-            case "test":
-                {
-                    let data = {buttons: [
-                        {id: "btn1", label: "Button 1", callback: (embed) => deleteEmbed(embed)},
-                        {id: "btn2", label: "Button 2", callback: (embed) => console.log("Button 2 clicked")},
-                        {id: "btn3", label: "Button 3", callback: (embed) => console.log(embed.id)},
-                    ]}
-
-                    let embed = createEmbed(data)
-
-                    embed.send(message.channel)
-                }
-                break
             case "queue":
             {
                 message.react('⚔');
@@ -112,6 +99,9 @@ client.on("message", async (message) => {
                             message.channel.send("Shut up nerd, you're not an admin.")
                             return
                         }
+                    case "u":
+                        user_id = args[1]
+                        break
                 }
 
 
@@ -169,8 +159,7 @@ client.on("message", async (message) => {
                 }
 
                 if (game) {
-                    let embed = getGameEmbed(game)
-                    message.channel.send(embed.embed)
+                    getGameEmbed(game).send(message.channel)
                 } else {
                     message.channel.send(`Could not find match with id '${args[0]}'`)
                 }
@@ -179,7 +168,7 @@ client.on("message", async (message) => {
             case "start":
                 message.react('☄');
 
-                if (current_match === null) {
+                if (!match_playing) {
                     let queue = await playersInQueue()
                     let inQueue = false;
                     for (let player of queue){
@@ -202,7 +191,6 @@ client.on("message", async (message) => {
 
                     current_match = await findMatch()
 
-
                     if (current_match != null) {
                         console.log("Match found")
                         match_playing = false
@@ -213,11 +201,7 @@ client.on("message", async (message) => {
                             player_states[matchup.player2] = {user: `<@${matchup.player2}>`, state: "none"}
                         }
 
-                        {
-                            let msg = getMatchMessageEmbed(current_match, player_states)
-
-                            match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
-                        }
+                        createEmbed(getMatchMessageEmbed(current_match, player_states)).send(message.channel)
                     } else {
                         message.channel.send("Not enough role variation to find game, try queuing in more roles")
                     }
@@ -241,9 +225,9 @@ client.on("message", async (message) => {
                             player_states[message.author.id].state = "accept"
                             initiator = player_states[message.author.id].user
                             winner = getPlayerSide(current_match, message.author.id, !["win", "won"].includes(cmd))
-                            let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
+                            
+                            createEmbed(getMatchEndMessageEmbed(initiator, winner, player_states)).send(message.channel)
 
-                            match_message = await message.channel.send(`||${msg.msg}||`, msg.embed)
                         } else {
                             message.channel.send("One of the teams still needs to do !lineup");
                         }
@@ -292,21 +276,11 @@ client.on("message", async (message) => {
                 }
 
                 pages = convertMatchHistoryToEmbed(nickname, embedData)
-                embed = new EasyEmbedPages(message.channel,
-                    {
-                        title: `:book: Match history for ${nickname} :book:`,
-                        color: '0099ff',
-                        pages: pages,
-                        allowStop: true,
-                        time: 300000,
-                        ratelimit: 1500
-                    })
-
-                embed.start({
-                    channel: message.channel,
-                    person: message.author
-                })
-
+                createEmbed({
+                    title: `:book: Match history for ${nickname} :book:`,
+                    colour: '#0099ff',
+                    pages: pages
+                }).send(message.channel, message.author.id)
                 break
             case 'epic':
                 message.channel.send('epic');
@@ -362,20 +336,12 @@ client.on("message", async (message) => {
                     message.react('🏅');
 
                     if (args.length === 0) {
-                        let embed = new EasyEmbedPages(message.channel,
-                            {
-                                color: 'ff77ff',
-                                title: `Ranking for all roles`,
-                                description: 'Type !ranking [role] for a specific role',
-                                pages: await getAllRankingEmbed(),
-                                allowStop: false,
-                                time: 300000,
-                                ratelimit: 500
-                            })
-                        embed.start({
-                            channel: message.channel,
-                            author: message.author
-                        })
+                        createEmbed({
+                            title: `Ranking for all roles`,
+                            colour: '#ff77ff',
+                            description: 'Type !ranking [role] for a specific role',
+                            pages: await getAllRankingEmbed()
+                        }).send(message.channel, message.author.id)
                     } else {
                         if (args[0].toLowerCase() === 'average') {
                             let e = await getAverageRankingData();
@@ -383,7 +349,7 @@ client.on("message", async (message) => {
                             embed = createEmbed(e);
 
                             if (embed){
-                                embed.send(message.channel, message.author)
+                                embed.send(message.channel, message.author.id)
                                 /*
                                 embed.start({
                                     channel: message.channel,
@@ -399,20 +365,12 @@ client.on("message", async (message) => {
                             let role = formatRoles([args[0]])
 
                             if (role.length > 0) {
-                                let embed = new EasyEmbedPages(message.channel,
-                                    {
-                                        color: 'aa77ff',
-                                        title: `Ranking for ${role[0]}`,
-                                        description: 'Type !ranking for a ranking of all roles',
-                                        pages: await getRoleRankEmbed(role[0]),
-                                        allowStop: false,
-                                        time: 300000,
-                                        ratelimit: 500
-                                    })
-                                embed.start({
-                                    channel: message.channel,
-                                    author: message.author
-                                })
+                                createEmbed({
+                                    title: `Ranking for ${role[0]}`,
+                                    colour: '#aa77ff',
+                                    description: 'Type !ranking for a ranking of all roles',
+                                    pages: await getRoleRankEmbed(role[0])
+                                }).send(message.channel, message.author.id)
                             } else {
                                 message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
                             }
@@ -663,22 +621,12 @@ client.on("message", async (message) => {
                 nickname = getMemberNickname(user_id, userList);
                 embedData = await getTeammateStats(user_id);
                 pages = await convertTeammateDataToEmbed(embedData);
-                let teammateEmbed = new EasyEmbedPages(message.channel,
-                    {
-                        title: `:clown: Teammate stats for ${nickname} :exploding_head:`,
-                        description: 'See your best and worst teammates!',
-                        color: 'AFFDD7',
-                        pages: pages,
-                        allowStop: true,
-                        time: 300000,
-                        ratelimit: 1500
-                    })
-
-                teammateEmbed.start({
-                    channel: message.channel,
-                    person: message.author
-                })
-
+                createEmbed({
+                    title: `:clown: Teammate stats for ${nickname} :exploding_head:`,
+                    description: 'See your best and worst teammates!',
+                    colour: 'AFFDD7',
+                    pages: pages,
+                }).send(message.channel, message.author)
                 break
             case "uwu":
                 {
@@ -706,113 +654,15 @@ client.on("message", async (message) => {
 
 client.on("clickMenu", async (menu) => {
     handleMenuInteration(menu)
-    menu.reply.defer()
+    try {
+        await menu.reply.defer()
+    } catch (error) {
+        console.log(`Error interaction with menu`)
+    }
+    
 })
 
 client.on("clickButton", async (button) => {
-    switch (button.id) {
-        case "accept_game": {
-            if (button.clicker.id in player_states) {
-                player_states[button.clicker.id].state = "accept"
-                let msg = getMatchMessageEmbed(current_match, player_states)
-
-                match_message.edit(`||${msg.msg}||`, msg.embed)
-
-                if (countReadyPlayers(player_states) >= 10 && match_playing === false) {
-                    let msg = getMatchMessageEmbed(current_match, player_states, true)
-                    await button.channel.send(`||${msg.msg}||`, msg.embed);
-                    await button.channel.send("Please insert your lineups using !lineup [top] [jgl] [mid]...");
-                    match_playing = true
-
-                    await match_message.delete()
-
-                    await clearQueue()
-
-                }
-            }
-
-        }
-
-            break
-        case "decline_game": {
-            if (button.clicker.id in player_states) {
-                player_states[button.clicker.id].state = "decline"
-                if (countDeclinedPlayers(player_states) >= 3 && match_playing === false) {
-                    await match_message.delete();
-                    button.channel.send('Match declined. :cry:');
-                    break
-                }
-                let msg = getMatchMessageEmbed(current_match, player_states)
-
-                match_message.edit(`||${msg.msg}||`, msg.embed)
-            }
-
-        }
-            break
-        case "confirm_win": {
-            if (button.clicker.id in player_states) {
-                player_states[button.clicker.id].state = "accept"
-
-                let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
-
-                match_message.edit(`||${msg.msg}||`, msg.embed)
-
-                let count = 0
-
-                Object.keys(player_states).forEach(player => {
-                    if (player_states[player].state === "accept") {
-                        count++
-                    }
-                })
-
-                if (count >= 6) {
-                    await match_message.delete()
-
-                    let game = await createGame(current_match.game, champs, winner)
-
-                    let embed = getGameEmbed(game)
-                    button.channel.send(`||${embed.msg}||`, embed.embed)
-
-                    current_match = null
-                    match_message = null
-                    player_states = {}
-                    match_playing = false
-                    initiator = null
-                    winner = null
-                    champs = {}
-                }
-            }
-        }
-            break
-        case "deny_win": {
-            if (button.clicker.id in player_states) {
-                player_states[button.clicker.id].state = "decline"
-
-                let msg = getMatchEndMessageEmbed(initiator, winner, player_states)
-
-                match_message.edit(`||${msg.msg}||`, msg.embed);
-
-                let count = 0
-
-                Object.keys(player_states).forEach(player => {
-                    if (player_states[player].state === "decline") {
-                        count++
-                    }
-                })
-
-                if (count >= 6) {
-                    try {await match_message.delete()}
-                    catch (e) {
-                        
-                    }
-
-                    button.channel.send('Confirm win deleted.');
-
-                }
-            }
-        }
-            break
-    }
 
     handleButtonInteration(button)
 
@@ -833,5 +683,79 @@ mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin
     serverSelectionTimeoutMS: 5000
 }).then(() => {
     client.login(process.env.BOT_TOKEN)
+}, err => {
+    console.log(`Failed to connect to MongoDB. Check that your ip is whitelisted.`)
 })
+
+export const btnAcceptClick = async (embed, button) => {
+    if (button.clicker.id in player_states) {
+        player_states[button.clicker.id].state = "accept"
+        
+        if (countReadyPlayers(player_states) >= 10 && match_playing === false) {
+            deleteEmbed(embed)
+
+            createEmbed(getMatchMessageEmbed(current_match, player_states, true)).send(button.channel)
+
+            await button.channel.send("Please insert your lineups using !lineup [top] [jgl] [mid]...");
+            match_playing = true
+
+            await clearQueue()
+
+        } else {
+            embed.init(getMatchMessageEmbed(current_match, player_states))
+        }
+    }
+}
+
+export const btnDeclineClick = (embed, button) => {
+    if (button.clicker.id in player_states) {
+        player_states[button.clicker.id].state = "decline"
+        if (countDeclinedPlayers(player_states) >= 3 && match_playing === false) {
+            deleteEmbed(embed)
+            button.channel.send('Match declined. :cry:');
+        } else {
+            embed.init(getMatchMessageEmbed(current_match, player_states))
+        }
+    }
+}
+
+export const btnAcceptWinClick = async (embed, button) => {
+    if (button.clicker.id in player_states) {
+        player_states[button.clicker.id].state = "accept"
+
+        if (countReadyPlayers(player_states) >= 6) {
+            deleteEmbed(embed)
+
+            if (current_match) {
+                let game = await createGame(current_match.game, champs, winner)
+                getGameEmbed(game).send(button.channel)
+            }
+
+            current_match = null
+            match_message = null
+            player_states = {}
+            match_playing = false
+            initiator = null
+            winner = null
+            champs = {}
+        } else {
+            embed.init(getMatchEndMessageEmbed(initiator, winner, player_states))
+        }
+    }
+}
+
+export const btnDeclineWinClick = (embed, button) => {
+    if (button.clicker.id in player_states) {
+        player_states[button.clicker.id].state = "decline"
+
+
+        if (countDeclinedPlayers(player_states) >= 6) {
+            deleteEmbed(embed)
+
+            button.channel.send('Confirm win cancelled.');
+        } else {
+            embed.init(getMatchEndMessageEmbed(initiator, winner, player_states))
+        }
+    }
+}
 

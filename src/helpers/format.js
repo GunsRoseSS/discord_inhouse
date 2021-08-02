@@ -315,8 +315,9 @@ export const formatDate = (date, shorthand = false) => {
 		return (date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear().toString().substring(2,4))
 	} else {
 		let d = date.toString()
-    	let date_p1 = d.substring(0,9)
-    	let date_p2 = dateOrdinal(d.substring(9,10))
+    	let date_p1 = d.substring(0,8)
+    	let date_p2 = d.substring(8,10)
+		date_p2 = dateOrdinal(date_p2.startsWith("0") ? date_p2.substring(1) : date_p2)
     	let date_p3 = d.substring(10,15)
 
 		return date_p1 + date_p2 + date_p3

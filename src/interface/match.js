@@ -2,6 +2,9 @@ import {MessageEmbed} from "discord.js"
 import {MessageButton} from "discord-buttons"
 
 import {getRoleEmoji, getStateEmoji} from "../helpers/emoji.js"
+import { createEmbed } from "./embed.js"
+
+import { btnAcceptClick, btnAcceptWinClick, btnDeclineClick, btnDeclineWinClick } from "../app.js"
 
 export const getMatchMessageEmbed = (match, player_states, started = false) => {
     let match_embed = new MessageEmbed()
@@ -14,7 +17,7 @@ export const getMatchMessageEmbed = (match, player_states, started = false) => {
     let msg_blue_side = ""
     let msg_red_side = ""
     let msg_outcome = ""
-    let msg_ping = ""
+    let msg_ping = "||"
 
     //Yes
     let count = 0
@@ -37,27 +40,32 @@ export const getMatchMessageEmbed = (match, player_states, started = false) => {
     match_embed.addField("RED", msg_red_side, true)
     match_embed.addField("OUTCOME", msg_outcome, true)
 
-    if (started) {
-        return {msg: msg_ping, embed: match_embed}
+    let out = {
+        message: msg_ping + "||",
+        title: !started ? "Match found" : "Match accepted",
+        description: `Expected outcome: ${(match.expected_outcome >= 0.5000) ? (match.expected_outcome * 100.0000).toFixed(2) + "% BLUE" : ((1.0000 - match.expected_outcome) * 100.0000).toFixed(2) + "% RED"} \n
+		Average matchup deviation: ${(match.avg_matchup_deviation * 100.0000).toFixed(2)}% \n\n`,
+        colour: "#a87732",
+        fields: [
+            {name: "BLUE", value: msg_blue_side, inline: true},
+            {name: "RED", value: msg_red_side, inline: true},
+            {name: "OUTCOME", value: msg_outcome, inline: true},
+        ]
     }
 
+    if (!started) {
+        out.buttons = [
+            {id: "accept_game", label: "Accept", style: "green", callback: btnAcceptClick},
+            {id: "decline_game", label: "Decline", style: "red", callback: btnDeclineClick}
+        ]
+    }
 
-    let btn_accept = new MessageButton()
-        .setLabel("Accept")
-        .setID("accept_game")
-        .setStyle("green")
-
-    let btn_decline = new MessageButton()
-        .setLabel("Decline")
-        .setID("decline_game")
-        .setStyle("red")
-
-    return {msg: msg_ping, embed: {buttons: [btn_accept, btn_decline], embed: match_embed}}
+    return out
 }
 
 export const getMatchEndMessageEmbed = (initiator, winner, player_states) => {
-    let msg = `${initiator} wants to score the game as a win for ${winner} \n Result will be accepted after 6 players confirm \n`
-    let msg_ping = ""
+    let msg = `${initiator} wants to score the game as a win for ${winner} \n Result will be accepted after 6 players confirm \n\n`
+    let msg_ping = "||"
 
     let acceptCount = 0;
     let declineCount = 0;
@@ -70,7 +78,6 @@ export const getMatchEndMessageEmbed = (initiator, winner, player_states) => {
         if (p.state === "decline") {
             declineCount++
         }
-        //msg += getStateEmoji(p.state)
         msg_ping += `${p.user}`
     })
 
@@ -80,22 +87,17 @@ export const getMatchEndMessageEmbed = (initiator, winner, player_states) => {
 
     msg += `\u2800 \u2800 ${acceptCount}/6`;
 
-    let match_embed = new MessageEmbed()
-        .setTitle("Confirm match end")
-        .setDescription(msg)
-        .setColor('#32a83e')
+    return {
+        message: msg_ping + "||",
+        title: "Confirm match end",
+        description: msg,
+        colour: "32a83e",
+        buttons: [
+            {id: "confirm_win", label: "Confirm", style: "green", callback: btnAcceptWinClick},
+            {id: "decline_win", label: "Deny", style: "red", callback: btnDeclineWinClick}
+        ]
+    }
 
-    let btn_confirm = new MessageButton()
-        .setLabel("Confirm")
-        .setID("confirm_win")
-        .setStyle("green")
-
-    let btn_deny = new MessageButton()
-        .setLabel("Deny")
-        .setID("deny_win")
-        .setStyle("red")
-
-    return {msg: msg_ping, embed: {buttons: [btn_confirm, btn_deny], embed: match_embed}}
 }
 
 export const getPlayerSide = (match, id, invert = false) => {

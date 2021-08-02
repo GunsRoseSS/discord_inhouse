@@ -12,6 +12,8 @@ import EasyEmbedPages from 'easy-embed-pages';
 import { ordinal } from "openskill";
 import {sortMetaData} from "../helpers/sort.js";
 
+import { createEmbed } from "./embed.js";
+
 export const createGame = async (game, champs, winner) => {
 
     let newGame = new Game({
@@ -117,16 +119,17 @@ export const getGameEmbed = (game) => {
         msg_ping += `<@${player.id}>`
     }
 
-    let game_embed = new MessageEmbed()
-        .setTitle(`Match ${game._id} results`)
-        .setColor('#7da832')
+    return createEmbed({
+        title: `Match ${game._id} results`,
+        description: "",
+        colour: "#7da832",
+        fields: [
+            {name: "BLUE", value: msg_blue, inline: true},
+            {name: "RED", value: msg_red, inline: true}
+        ],
+        footer: `Played on ${formatDate(game.date)}`
+    })
 
-    game_embed.addField("BLUE", msg_blue, true)
-    game_embed.addField("RED", msg_red, true)
-
-    game_embed.setFooter(`Played on ${formatDate(game.date)}`)
-
-    return {msg: msg_ping, embed: game_embed}
 
 }
 

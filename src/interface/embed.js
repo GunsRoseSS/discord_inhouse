@@ -43,9 +43,14 @@ class Embed {
         this.end = new Date()
         this.end.setSeconds(this.end.getSeconds() + 1800)
 
+        if ("message" in data) {
+            this.text = data.message
+        }
+
         let default_title = "title" in data ? data.title : "Message Embed"
         let default_colour = "colour" in data ? data.colour : "#FF0000"
         let default_description = "description" in data ? data.description : "Description"
+        let default_footer = "footer" in data ? data.footer : "\u2800".repeat(50)
 
         if ("menu" in data) {
             data.menu.id = generateId()
@@ -75,7 +80,7 @@ class Embed {
                 this.pages.push(page)
             });
         } else {
-            this.pages.push({title: default_title, colour: default_colour, description: default_description})
+            this.pages.push({title: default_title, colour: default_colour, description: default_description, footer: default_footer})
             if ("fields" in data) {
                 this.pages[0].fields = data.fields
             }
@@ -91,6 +96,7 @@ class Embed {
                 {id:`Back${generateId()}`, label: "<", style: "red"},
                 {id:`Next${generateId()}`, label: ">", style: "green"},
                 {id:`NextEnd${generateId()}`, label: ">>", style: "green"}]
+
             this.pages = this.pages.map((page, index) => {
                 page.footer = `Page ${index+1} of ${this.pages.length}`
                 return page
@@ -167,7 +173,11 @@ class Embed {
     async update() {
         let message = this.#createEmbedMessage()
         try {
-            await this.message.edit(message)
+            if ("text" in this) {
+                await this.message.edit(this.text, message)
+            } else {
+                await this.message.edit(message)
+            }
         } catch (err) {
             console.log(`Failed to update embed id: ${this.id}`)
         }
@@ -180,7 +190,13 @@ class Embed {
 
         let message = this.#createEmbedMessage()
 
-        this.message = await channel.send(message)
+        if ("text" in this) {
+            this.message = await channel.send(this.text, message)
+        } else {
+            this.message = await channel.send(message)
+        }
+
+        
     }
 }
 
@@ -243,7 +259,7 @@ export const handleButtonInteration = (button) => {
                     }
 
                     if ("callback" in search) {
-                        search.callback(embed)
+                        search.callback(embed, button)
                     }
 
                     embed.end = new Date()
