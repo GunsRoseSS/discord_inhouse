@@ -171,7 +171,7 @@ export const getAllChampionsEmbedv2 = async () => {
         champ_msg += `${getChampionName(champ.name)} \n`
         mmr_msg += `${champ.gained > 0 ? "+" : ""}${Math.floor(champ.gained)}, ${champ.wins}/${champ.losses}\n`
     
-        if ((index+1) % PAGE_SIZE == 0 || index == data.length - 1) {
+        if ((index+1) % PAGE_SIZE === 0 || index === data.length - 1) {
             pages.push({fields: [
                 {
                     name: "Player",

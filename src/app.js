@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import {Client, MessageEmbed} from "discord.js";
+import {Client} from "discord.js";
 import EasyEmbedPages from 'easy-embed-pages';
-import disbut, { MessageButton } from "discord-buttons";
+import disbut from "discord-buttons";
 import fs from "fs";
 
-import {createUser, getUser, getUsers, getUserChampionStats} from "./interface/user.js"
+import {createUser, getUser} from "./interface/user.js"
 import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js"
 import {
     getMatchMessageEmbed,
@@ -21,21 +21,20 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID, getAllGames, getMetaEmbed, createGameDev
+    getGameByMatchID, getAllGames, getMetaEmbed
 } from "./interface/games.js"
 
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
-import {checkPositive, formatChampions, formatRoles, getChampionName} from "./helpers/format.js";
+import {formatChampions, formatRoles} from "./helpers/format.js";
 import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
 
-import {getAllRankingEmbed, getUserRankEmbed,getRoleRankEmbed } from "./interface/ranking.js"
+import {getAllRankingEmbed, getUserRankEmbed, getRoleRankEmbed, getAverageRankingData} from "./interface/ranking.js"
 import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js";
-import {quickSortPlayers} from "./helpers/sort.js";
 
 import {createEmbed, deleteEmbed, handleButtonInteration, handleMenuInteration, updateEmbeds} from "./interface/embed.js"
-import { getPlayerChampionDatav2, getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
+import { getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
 
 dotenv.config()
 
@@ -362,7 +361,7 @@ client.on("message", async (message) => {
                 {
                     message.react('🏅');
 
-                    if (args.length == 0) {
+                    if (args.length === 0) {
                         let embed = new EasyEmbedPages(message.channel,
                             {
                                 color: 'ff77ff',
@@ -378,25 +377,45 @@ client.on("message", async (message) => {
                             author: message.author
                         })
                     } else {
-                        let role = formatRoles([args[0]])
+                        if (args[0].toLowerCase() === 'average') {
+                            let e = await getAverageRankingData();
 
-                        if (role.length > 0) {
-                            let embed = new EasyEmbedPages(message.channel,
-                                {
-                                    color: 'aa77ff',
-                                    title: `Ranking for ${role[0]}`,
-                                    description: 'Type !ranking for a ranking of all roles',
-                                    pages: await getRoleRankEmbed(role[0]),
-                                    allowStop: false,
-                                    time: 300000,
-                                    ratelimit: 500
+                            embed = createEmbed(e);
+
+                            if (embed){
+                                embed.send(message.channel, message.author)
+                                /*
+                                embed.start({
+                                    channel: message.channel,
+                                    author: message.author
                                 })
-                            embed.start({
-                                channel: message.channel,
-                                author: message.author
-                            })
+                                */
+                                break
+                            } else {
+                                message.channel.send('No games have been played so far.')
+                                break
+                            }
                         } else {
-                            message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
+                            let role = formatRoles([args[0]])
+
+                            if (role.length > 0) {
+                                let embed = new EasyEmbedPages(message.channel,
+                                    {
+                                        color: 'aa77ff',
+                                        title: `Ranking for ${role[0]}`,
+                                        description: 'Type !ranking for a ranking of all roles',
+                                        pages: await getRoleRankEmbed(role[0]),
+                                        allowStop: false,
+                                        time: 300000,
+                                        ratelimit: 500
+                                    })
+                                embed.start({
+                                    channel: message.channel,
+                                    author: message.author
+                                })
+                            } else {
+                                message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
+                            }
                         }
                     }
                 }
@@ -405,18 +424,18 @@ client.on("message", async (message) => {
             case 'champion':
                 message.react('🧙‍♀️');
                 {
-                    if (args.length == 0) {
+                    if (args.length === 0) {
                         message.channel.send("You messed up the command, sunshine. !champion [champion]")
                     } else {
                         let user_id = message.author.id
 
                         if (args.length > 1) {
-                            if (args[1] != "all") {
+                            if (args[1] !== "all") {
                                 user_id = args[1].substring(3,args[1].length - 1)
                             }
                         }
 
-                        if (args[1] != "all") {
+                        if (args[1] !== "all") {
                             let embed = await getPlayerChampionEmbedv2(user_id, args[0], userList)
 
                             if (embed) {
@@ -450,13 +469,13 @@ client.on("message", async (message) => {
                     let user_id = message.author.id
 
                     if (args.length > 0) {
-                        if (args[0] != "all") {
+                        if (args[0] !== "all") {
                             user_id = args[0].substring(3, args[0].length - 1)
                         }
                         
                     }
 
-                    if (args[0] != "all") {
+                    if (args[0] !== "all") {
                         let data = await getPlayerChampionsEmbedv2(user_id, userList)
 
                         if (data != null) {
