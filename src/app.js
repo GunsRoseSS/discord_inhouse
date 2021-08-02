@@ -693,6 +693,10 @@ client.on("message", async (message) => {
                     message.channel.send({files: ["https://cdn.discordapp.com/attachments/287347623139082240/871055953003425863/l9.png"]})
                 }
                 break
+            case "dab":
+            case "cancer":
+                message.channel.send('I hate you for making me do this.', {files: ["https://cdn.discordapp.com/attachments/863014796915638296/871739279515213824/dabgif.gif"]})
+                break
             default:
                 message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
                 message.channel.send({files: ['https://cdn.discordapp.com/attachments/863014796915638296/869315149738172506/kiwihelp.jpg']});
