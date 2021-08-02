@@ -317,7 +317,7 @@ export const paginateHistoryEmbed = (historyData, links) => {
     return pages
 }
 
-export const getMetaEmbed = (message, games, type) => {
+export const getMetaEmbed = (games, type) => {
     let dictChamps = {
         'pickRate': 0
     };
@@ -386,13 +386,59 @@ export const getMetaEmbed = (message, games, type) => {
         }
     })
 
-    return new EasyEmbedPages(message.channel, {
-        title: `Meta data for all champions`,
+    let title_msg = "Meta data for all champions"
+
+    switch (type) {
+        case "mmr":
+            title_msg += " sort: MMR High -> Low"
+            break
+        case "reverse_mmr":
+            title_msg += " sort: MMR Low -> High"
+            break
+        case "pickrate":
+            title_msg += "sort: Pickrate High -> Low"
+            break
+        case "reverse_pickrate":
+            title_msg += "sort: Pickrate Low -> High"
+            break
+    }
+
+    return {
+        title: title_msg,
         description: "",
-        color: 'a83254',
-        allowStop: true,
-        time: 300000,
-        ratelimit: 1500,
-        pages: pages
-    })
+        colour: "#a83254",
+        pages: pages,
+        menu: {
+            hint: "Sort by...",
+            callback: menuSort,
+            options: [
+                {label: "MMR", description: "High -> Low", value: "mmr_high"},
+                {label: "MMR", description: "Low -> High", value: "mmr_low"},
+                {label: "Pick rate", description: "High -> Low", value: "pick_high"},
+                {label: "Pick rate", description: "Low -> High", value: "pick_low"},
+            ]
+        }
+    }
+}
+
+async function menuSort(embed, menuValue) {
+    let data
+    let games = await getAllGames();
+    switch (menuValue) {
+        case "mmr_high":
+            data = getMetaEmbed(games, "mmr")
+            break
+        case "mmr_low":
+            data = getMetaEmbed(games, "reverse_mmr")
+            break
+        case "pick_high":
+            data = getMetaEmbed(games, "pickrate")
+            break
+        case "pick_low":
+            data = getMetaEmbed(games, "reverse_pickrate")
+            break
+    }
+    embed.current_page = 0
+    embed.init(data)
+    embed.update()
 }

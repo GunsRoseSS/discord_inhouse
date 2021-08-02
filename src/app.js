@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import {Client, MessageEmbed} from "discord.js";
 import EasyEmbedPages from 'easy-embed-pages';
-import disbut from "discord-buttons";
+import disbut, { MessageButton } from "discord-buttons";
 import fs from "fs";
 
 import {createUser, getUser, getUsers, getUserChampionStats} from "./interface/user.js"
@@ -21,15 +21,9 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID, getAllGames, getMetaEmbed
+    getGameByMatchID, getAllGames, getMetaEmbed, createGameDev
 } from "./interface/games.js"
 
-import {
-    championDataToEmbed,
-    fetchChampionIcon,
-    getAllPlayerChampionStats,
-    getPaginatedChampionEmbed
-} from "./interface/champion.js"
 import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
@@ -39,6 +33,9 @@ import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammate
 import {getAllRankingEmbed, getUserRankEmbed,getRoleRankEmbed } from "./interface/ranking.js"
 import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js";
 import {quickSortPlayers} from "./helpers/sort.js";
+
+import {createEmbed, deleteEmbed, handleButtonInteration, handleMenuInteration, updateEmbeds} from "./interface/embed.js"
+import { getPlayerChampionDatav2, getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
 
 dotenv.config()
 
@@ -59,6 +56,7 @@ client.on("ready", async() => {
     console.log("Bot started, fetching guild members")
     userList = await fetchGuildMemberNicknames(client);
     console.log('Loaded!');
+    setInterval(updateEmbeds, 60000)
 })
 
 client.on("guildMemberAdd", async() => {
@@ -72,6 +70,19 @@ client.on("message", async (message) => {
         var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
+            case "test":
+                {
+                    let data = {buttons: [
+                        {id: "btn1", label: "Button 1", callback: (embed) => deleteEmbed(embed)},
+                        {id: "btn2", label: "Button 2", callback: (embed) => console.log("Button 2 clicked")},
+                        {id: "btn3", label: "Button 3", callback: (embed) => console.log(embed.id)},
+                    ]}
+
+                    let embed = createEmbed(data)
+
+                    embed.send(message.channel)
+                }
+                break
             case "queue":
             {
                 message.react('⚔');
@@ -102,15 +113,6 @@ client.on("message", async (message) => {
                             message.channel.send("Shut up nerd, you're not an admin.")
                             return
                         }
-                    // case "-u":
-                    //     if (admin) {
-                    //         user_id = args[1]
-                    //         args = args.slice(2)
-                    //         break
-                    //     } else {
-                    //         message.channel.send("Shut up nerd, you're not an admin.")
-                    //         return
-                    //     }
                 }
 
 
@@ -124,7 +126,7 @@ client.on("message", async (message) => {
 
                 if (roles.length != 0) {
                     await addToQueue(user_id, roles);
-                    message.channel.send(await getQueueEmbed());
+                    (await getQueueEmbed()).send(message.channel)
                 } else {
                     message.channel.send('Something went wrong while trying to add you to the queue. Did you spell your roles correctly?')
                 }
@@ -153,7 +155,7 @@ client.on("message", async (message) => {
                 if (succes.n === 0){
                     message.channel.send("You can't leave the queue if you're not in it.");
                 } else {
-                    message.channel.send(await getQueueEmbed());
+                    (await getQueueEmbed()).send(message.channel)
                 }
                 break
             case "view": {
@@ -201,7 +203,9 @@ client.on("message", async (message) => {
 
                     current_match = await findMatch()
 
+
                     if (current_match != null) {
+                        console.log("Match found")
                         match_playing = false
                         player_states = {}
 
@@ -269,10 +273,6 @@ client.on("message", async (message) => {
                     message.channel.send("Either there is no match being played or you're not in the current match.")
                 }
                 break
-            // case "lineup2":
-            //     champs["BLUE"] = ["Tristana", "Maokai", "Warwick", "Lulu", "Fiora"]
-            //     champs["RED"] = ["Ekko", "LeeSin", "Vladimir", "Rell", "Leona"]
-            //     break
             case "past":
             case 'history':
                 message.react('📖')
@@ -404,184 +404,75 @@ client.on("message", async (message) => {
             case 'champ':
             case 'champion':
                 message.react('🧙‍♀️');
+                {
+                    if (args.length == 0) {
+                        message.channel.send("You messed up the command, sunshine. !champion [champion]")
+                    } else {
+                        let user_id = message.author.id
 
-                switch (args.length) {
-                    case 1:
-                        champion = formatChampions([args[0]]);
-                        if (champion.length == 0) {
-                            message.channel.send('Have you considered a spelling course? Could not recognise champion.')
-                            break
-                        }
-                        champion = champion[0];
-
-                        user_id = message.author.id;
-                        nickname = getMemberNickname(user_id, userList);
-                        embedData = await getUserChampionStats(user_id, champion);
-
-                        if (embedData) {
-                            embed = new MessageEmbed()
-                                .setTitle(`${getChampionName(champion)} stats for ${nickname}`)
-                                .setColor('ab12ef')
-                                .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.')
-                                .setThumbnail(fetchChampionIcon(champion))
-                                .addFields({
-                                        name: "Total MMR gain/loss",
-                                        value: `${checkPositive((embedData).mmrDiff)}`,
-                                        inline: true
-                                    },
-                                    {
-                                        name: "Win/Loss",
-                                        value: `${(embedData).wins}/${(embedData).losses}`,
-                                        inline: true
-                                    })
-
-                            message.channel.send(embed);
-                        } else {
-                            message.channel.send(`You have not played ${getChampionName(champion)} before.`)
-                        }
-
-                        break
-                    case 2:
-                        champion = formatChampions([args[0]]);
-                        if (champion === []) {
-                            message.channel.send('Have you considered a spelling course? Could not recognise champion.')
-                            break
-                        }
-                        champion = champion[0];
-
-                        if (args[1].toLowerCase() === 'all') {
-                            embedData = getAllPlayerChampionStats(await getUsers(), champion);
-
-                            if (embedData) {
-                                embed = new MessageEmbed()
-                                    .setTitle(`${getChampionName(champion)} stats for all players`)
-                                    .setColor('ab12ef')
-                                    .setDescription('Type **!champion [champion]** to view your own stats for that champion or **!champion [champion] [@player]** to view stats of the champion for another player.')
-                                    .setThumbnail(fetchChampionIcon(champion))
-                                    .addFields({
-                                            name: "Player",
-                                            value: championDataToEmbed(embedData, 'nickname'),
-                                            inline: true
-                                        },
-                                        {
-                                            name: "Total MMR gain/loss",
-                                            value: championDataToEmbed(embedData, 'mmr'),
-                                            inline: true
-                                        },
-                                        {
-                                            name: "Win/Loss",
-                                            value: championDataToEmbed(embedData, 'winLoss'),
-                                            inline: true
-                                        })
-
-                                message.channel.send(embed);
-
-                            } else {
-                                message.channel.send(`No players have played ${getChampionName(champion)} yet.`)
-                            }
-                        } else {
-                            user_id = args[1].slice(3, args[1].length - 1);
-                            nickname = getMemberNickname(user_id, userList);
-                            embedData = await getUserChampionStats(user_id, champion);
-
-                            if (embedData) {
-                                embed = new MessageEmbed()
-                                    .setTitle(`${getChampionName(champion)} stats for ${nickname}`)
-                                    .setColor('ab12ef')
-                                    .setDescription('Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion]** to view your own stats for the champion. for the champion.')
-                                    .setThumbnail(fetchChampionIcon(champion))
-                                    .addFields({
-                                            name: "Total MMR gain/loss",
-                                            value: `${checkPositive((embedData).mmrDiff)}`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: "Win/Loss",
-                                            value: `${(embedData).wins}/${(embedData).losses}`,
-                                            inline: true
-                                        })
-
-                                message.channel.send(embed);
-
-                            } else {
-                                message.channel.send(`This player hasn't played ${getChampionName(champion)} yet.`)
+                        if (args.length > 1) {
+                            if (args[1] != "all") {
+                                user_id = args[1].substring(3,args[1].length - 1)
                             }
                         }
-                        break
-                    default:
-                        message.channel.send('You messed up the command, sunshine. !champion [champion]');
+
+                        if (args[1] != "all") {
+                            let embed = await getPlayerChampionEmbedv2(user_id, args[0], userList)
+
+                            if (embed) {
+                                embed = createEmbed(embed)
+                                embed.send(message.channel, message.author.id)
+                            } else {
+                                message.channel.send("This player has not played this champion before")
+                            }
+                        } else {
+                            let embed = await getAllPlayerChampionEmbedv2(args[0])
+
+                            if (embed) {
+                                embed = createEmbed(embed)
+                                embed.send(message.channel, message.author.id)
+                            } else {
+                                message.channel.send("Could not recognise champion")
+                            }
+                        }
+
+                       
+                    }
+
+                    
                 }
                 break
             case 'champs':
             case 'champions':
-                message.react('🧙‍♂️');
+                {
+                    message.react('🧙‍♂️');
 
-                if (args.length < 1) {
-                    user_id = message.author.id;
+                    let user_id = message.author.id
 
-                } else {
-                    if (args[0].toLowerCase() === 'all') {
-                        let allChampData = [];
-                        let users = await getUsers();
-                        for (let user of users) {
-                            let champData = await getUserChampionStats(user._id);
-
-                            for (let champ of champData){
-                                allChampData.push({
-                                    id: user._id,
-                                    name: getChampionName(champ.name),
-                                    mmrDiff: champ.mmrDiff,
-                                    wins: champ.wins,
-                                    losses: champ.losses
-                                });
-                            }
+                    if (args.length > 0) {
+                        if (args[0] != "all") {
+                            user_id = args[0].substring(3, args[0].length - 1)
                         }
-
-                        if (allChampData.length !== 0) {
-                            embed = getPaginatedChampionEmbed(message, quickSortPlayers(allChampData, 'champStats'));
-
-                            embed.start({
-                                channel: message.channel,
-                                author: message.author
-                            })
-                        } else {
-                            message.channel.send('No games have been played yet.')
-                        }
-                        break
+                        
                     }
-                    user_id = args[0].slice(3, args[0].length - 1);
-                }
-                nickname = getMemberNickname(user_id, userList);
-                if (nickname === null) {
-                    message.channel.send('Could not find user.');
-                    break
-                }
-                embedData = await getUserChampionStats(user_id);
-                embedData = quickSortPlayers(embedData, 'champStats');
 
-                if (embedData.length !== 0) {
-                    embed = new MessageEmbed()
-                        .setTitle(`All champion stats for ${nickname}`)
-                        .setColor('6678B8')
-                        .setDescription("Type **!champions [@player]** to view another player's champion stats")
-                        .addFields({
-                                name: "Champion",
-                                value: championDataToEmbed(embedData, 'champion'),
-                                inline: true
-                            }, {
-                                name: "Total MMR gain/loss",
-                                value: championDataToEmbed(embedData, 'mmr'),
-                                inline: true
-                            },
-                            {
-                                name: "Win/Loss",
-                                value: championDataToEmbed(embedData, 'winLoss'),
-                                inline: true
-                            })
+                    if (args[0] != "all") {
+                        let data = await getPlayerChampionsEmbedv2(user_id, userList)
 
-                    message.channel.send(embed);
-                } else {
-                    message.channel.send('You have/This player has not played any champions yet')
+                        if (data != null) {
+                            let embed = createEmbed(data)
+        
+                            embed.send(message.channel, message.author.id)
+                        } else {
+                            message.channel.send("This user hasn't played any games")
+                        }                 
+                    } else {
+                        let data = await getAllChampionsEmbedv2()
+
+                        let embed = createEmbed(data)
+                        embed.send(message.channel, message.author.id)
+                    }
+                   
                 }
                 break
             case 'meta':
@@ -607,13 +498,18 @@ client.on("message", async (message) => {
                 }
                 let games = await getAllGames();
 
-                embed = getMetaEmbed(message, games, type);
+                let e = getMetaEmbed(games, type);
+
+                embed = createEmbed(e)
 
                 if (embed){
+                    embed.send(message.channel, message.author)
+                    /*
                     embed.start({
                         channel: message.channel,
                         author: message.author
                     })
+                    */
                     break
                 } else {
                     message.channel.send('No games have been played so far.')
@@ -785,6 +681,11 @@ client.on("message", async (message) => {
     }
 })
 
+client.on("clickMenu", async (menu) => {
+    handleMenuInteration(menu)
+    menu.reply.defer()
+})
+
 client.on("clickButton", async (button) => {
     switch (button.id) {
         case "accept_game": {
@@ -889,6 +790,8 @@ client.on("clickButton", async (button) => {
         }
             break
     }
+
+    handleButtonInteration(button)
 
     try {
         await button.reply.defer()

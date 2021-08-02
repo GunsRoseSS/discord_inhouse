@@ -1,103 +1,298 @@
-import {quickSortPlayers} from "../helpers/sort.js";
-import {checkPositive, getChampionName} from "../helpers/format.js";
-import {emojiNumberSelector} from "../helpers/emoji.js";
-import EasyEmbedPages from 'easy-embed-pages';
+import { getUserMatchHistory } from "./user.js"
 
+import { ordinal } from "openskill"
 
-export const fetchChampionIcon = (champion) => {
+import Game from "../models/game.js"
+
+import { getMemberNickname } from "../helpers/discord.js"
+
+import { formatChampions, getChampionName } from "../helpers/format.js"
+
+import { emojiNumberSelector } from "../helpers/emoji.js"
+
+const fetchChampionIcon = (champion) => {
     return `https://ddragon.leagueoflegends.com/cdn/11.15.1/img/champion/${champion}.png`
 }
 
-export const getAllPlayerChampionStats = (players, champion) => {
-    let dataArray = [];
-    for (let player of players) {
-        for (let champ of player.championStats){
-            if (champ.name === champion){
-                let embedObject = {
-                    player: player._id,
-                    mmrDiff: champ.mmrDiff,
-                    wins: champ.wins,
-                    losses: champ.losses
-                }
-                dataArray.push(embedObject);
+export const getPlayerChampionDatav2 = async (id) => {
+    let history = await getUserMatchHistory(id)
+
+    if (!history || history.length == 0) {
+        return null
+    }
+
+    let games = await Game.find({$or: history.map(match => match = {_id: match})})
+
+    let champions = {}
+
+    games.forEach(game => {
+        let index = game.players.findIndex(element => element.id == id)
+        let win = ((game.winner == "BLUE" && index < 5) || (game.winner == "RED" && index >= 5)) ? true : false
+        let player = game.players[index]
+
+        if (player.champion in champions) {
+            champions[player.champion].wins += win ? 1 : 0
+            champions[player.champion].losses += win ? 0 : 1
+            champions[player.champion].gained += ordinal(player.afterGameElo) - ordinal(player.previousElo)
+        } else {
+            champions[player.champion] = {wins: win ? 1 : 0, losses: win ? 0 : 1, gained: ordinal(player.afterGameElo) - ordinal(player.previousElo)}
+        }
+    })
+
+    return champions
+}
+
+const getAllChampionsDatav2 = async () => {
+    let games = await Game.find()
+
+    let players = {}
+
+    games.forEach(game => {
+        game.players.forEach((player, index) => {
+            let win = ((game.winner == "BLUE" && index < 5) || (game.winner == "RED" && index >= 5)) ? true : false
+
+            if (!(player.id in players)) {
+                players[player.id] = {}
             }
-        }
-    }
-    return quickSortPlayers(dataArray, 'champStats')
+
+            if (player.champion in players[player.id]) {
+                players[player.id][player.champion].gained += ordinal(player.afterGameElo) - ordinal(player.previousElo)
+                players[player.id][player.champion].wins += win ? 1 : 0
+                players[player.id][player.champion].losses += win ? 0 : 1
+            } else {
+                players[player.id][player.champion] = {wins: win ? 1 : 0, losses: win ? 0 : 1, gained: ordinal(player.afterGameElo) - ordinal(player.previousElo)}
+            }
+        })
+    })
+
+    return players
 }
 
-export const championDataToEmbed = (playersData, type) => { //consistency? fuck consistency!
-    let embedString = '';
-    let counter = 0;
-    for (let player of playersData){
-        counter += 1
-        switch (type) {
-            case 'nickname':
-                embedString = embedString + emojiNumberSelector(counter) + '<@' + player.player + '>' + '\n';
-                break
-            case 'champion':
-                embedString = embedString + getChampionName(player.name) + '\n';
-                break
-            case 'mmr':
-                embedString = embedString + checkPositive(player.mmrDiff).toString() + '\n';
-                break
-            case 'winLoss':
-                embedString = embedString + player.wins.toString() + '/' + player.losses.toString() + '\n';
-                break
-            case 'mmrWinLoss':
-                embedString = embedString + checkPositive(player.mmrDiff).toString() + ', ' + player.wins.toString() + '/' + player.losses.toString() + '\n';
-                break
-        }
+export const getAllPlayerChampionEmbedv2 = async (champion) => {
+    let data = await getAllChampionsDatav2()
+
+    champion = formatChampions([champion])
+
+    if (champion.length > 0) {
+        champion = champion[0]
+    } else {
+        return null
     }
-    return embedString
 
-}
+    data = Object.keys(data).reduce((out, player) => {
+        for (let champ of Object.keys(data[player])) {
+            if (champ == champion) {
+                out.push({id: player, name: champ, ...data[player][champ]})
+            }       
+        }
+        return out
+    }, []).sort((champ1, champ2) => {
+        if (champ1.gained > champ2.gained) {
+            return -1
+        } else if (champ1.gained < champ2.gained) {
+            return 1
+        }
+        return 0
+    })
 
-export const getPaginatedChampionEmbed = (message, embedData) => {
-    let pages = [];
+    let pages = []
 
-    const PAGE_SIZE = 10;
-    let rank_msg = "";
-    let champ_msg = "";
-    let mmr_msg = "";
+    const PAGE_SIZE = 10
+    
+    let player_msg = ""
+    let mmr_msg = ""
+    let win_msg = ""
 
-    embedData.forEach((data, index) => {
-        rank_msg += `${emojiNumberSelector(index+1)}: <@${data.id}>\n`
-        champ_msg += `${getChampionName(data.name)} \n`
-        mmr_msg += `${checkPositive(data.mmrDiff)}, ${data.wins}/${data.losses} \n`
-
-        if ((index+1) % PAGE_SIZE == 0 || index == embedData.length - 1) {
+    data.forEach((player, index) => {
+        player_msg += `${emojiNumberSelector(index+1)} : <@${player.id}> \n`
+        mmr_msg += `${player.gained > 0 ? "+" : ""}${Math.floor(player.gained)} \n`
+        win_msg += `${player.wins}/${player.losses} \n`
+    
+        if ((index+1) % PAGE_SIZE == 0 || index == data.length - 1) {
             pages.push({fields: [
-                    {
-                        name: "Player",
-                        value: rank_msg,
-                        inline: true
-                    },
-                    {
-                        name: "Champion",
-                        value: champ_msg,
-                        inline: true
-                    },
-                    {
-                        name: "MMR & Win/Loss",
-                        value: mmr_msg,
-                        inline: true
-                    }
-                ]})
+                {
+                    name: "Player",
+                    value: player_msg,
+                    inline: true
+                },
+                {
+                    name: "Total MMR gain/loss",
+                    value: mmr_msg,
+                    inline: true
+                },
+                {
+                    name: "Win/Loss",
+                    value: win_msg,
+                    inline: true
+                }
+            ]})
 
-            rank_msg = ""
+            player_msg = ""
+            mmr_msg = ""
+            win_msg = ""
+        }
+    })
+
+    return {
+        title: `${champion} stats for all players`,
+        description: "Type **!champion [champion]** to view your own stats for that champion or **!champion [champion] [@player]** to view stats of the champion for another player.",
+        thumbnail: fetchChampionIcon(champion),
+        pages: pages
+    }
+}
+
+export const getAllChampionsEmbedv2 = async () => {
+    let data = await getAllChampionsDatav2()
+
+    data = Object.keys(data).reduce((out, player) => {
+        for (let champ of Object.keys(data[player])) {
+            out.push({id: player, name: champ, ...data[player][champ]})
+        }
+        return out
+    }, []).sort((champ1, champ2) => {
+        if (champ1.gained > champ2.gained) {
+            return -1
+        } else if (champ1.gained < champ2.gained) {
+            return 1
+        }
+        return 0
+    })
+
+    let pages = []
+
+    const PAGE_SIZE = 10
+    
+    let player_msg = ""
+    let champ_msg = ""
+    let mmr_msg = ""
+
+    data.forEach((champ, index) => {
+        player_msg += `${emojiNumberSelector(index+1)} : <@${champ.id}> \n`
+        champ_msg += `${getChampionName(champ.name)} \n`
+        mmr_msg += `${champ.gained > 0 ? "+" : ""}${Math.floor(champ.gained)}, ${champ.wins}/${champ.losses}\n`
+    
+        if ((index+1) % PAGE_SIZE == 0 || index == data.length - 1) {
+            pages.push({fields: [
+                {
+                    name: "Player",
+                    value: player_msg,
+                    inline: true
+                },
+                {
+                    name: "Champion",
+                    value: champ_msg,
+                    inline: true
+                },
+                {
+                    name: "MMR & Win/Loss",
+                    value: mmr_msg,
+                    inline: true
+                }
+            ]})
+
+            player_msg = ""
             champ_msg = ""
             mmr_msg = ""
         }
     })
 
-    return new EasyEmbedPages(message.channel, {
-        title: `All champion stats.`,
+    return {
+        title: "All champion stats",
         description: "Type **!champions [@player]** to view another player's champion stats",
-        color: '6678B8',
-        allowStop: true,
-        time: 300000,
-        ratelimit: 1500,
         pages: pages
+    }
+}
+
+export const getPlayerChampionsEmbedv2 = async (id, userList) => {
+    let pages = []
+
+    const PAGE_SIZE = 10
+    
+    let champ_msg = ""
+    let mmr_msg = ""
+    let wins_msg = ""
+
+    let champData = await getPlayerChampionDatav2(id)
+
+    if (champData == null) {
+        return null
+    }
+
+    let embed = {
+        title: `All champion stats for ${getMemberNickname(id, userList)}`,
+        description: "Type **!champions [@player]** to view another player's champion stats"
+    }
+
+    champData = Object.keys(champData).sort((champ1, champ2) => {
+        if (champData[champ1].gained > champData[champ2].gained) {
+            return -1
+        } else if (champData[champ1].gained < champData[champ2].gained) {
+            return 1
+        }
+        return 0
+    }).map(champ => {
+        return {name: champ, gained: champData[champ].gained, wins: champData[champ].wins, losses: champData[champ].losses}
     })
+    
+    champData.forEach((champion, index) => {
+        champ_msg += `${getChampionName(champion.name)} \n`
+        mmr_msg += `${champion.gained > 0 ? "+" : ""}${Math.floor(champion.gained)} \n`
+        wins_msg += `${champion.wins}/${champion.losses} \n`
+    
+        if ((index+1) % PAGE_SIZE == 0 || index == champData.length - 1) {
+            pages.push({fields: [
+                {
+                    name: "Champion",
+                    value: champ_msg,
+                    inline: true
+                },
+                {
+                    name: "Total MMR gain/loss",
+                    value: mmr_msg,
+                    inline: true
+                },
+                {
+                    name: "Win/Loss",
+                    value: wins_msg,
+                    inline: true
+                }
+            ]})
+
+            champ_msg = ""
+            mmr_msg = ""
+            wins_msg = ""
+
+        }
+    })
+
+    embed.pages = pages
+
+    return embed  
+}
+
+export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
+    let champs = await getPlayerChampionDatav2(id)
+
+    if (champs == null) {
+        return null
+    }
+
+    champion = formatChampions([champion])
+
+    if (champion.length > 0) {
+        champion = champion[0]
+        if (champion in champs) {
+            return {
+                title: `${getChampionName(champion)} stats for ${getMemberNickname(id, userList)}`,
+                description: "Type **!champion [champion]** all to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.",
+                thumbnail: fetchChampionIcon(champion),
+                fields: [
+                    {name: "Total MMR gain/loss", value: `${champs[champion].gained > 0 ? "+" : ""}${Math.floor(champs[champion].gained)}`, inline: true},
+                    {name: "Win/Loss", value: `${champs[champion].wins}/${champs[champion].losses}`, inline: true}
+                ]
+            }
+        }
+    }
+
+    return null
 }

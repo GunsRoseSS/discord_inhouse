@@ -92,6 +92,17 @@ export const getUserGraphData = async (id, count = 30) => {
 
     let games = await Game.find({$or : matches})
 
+    games = games.sort((game1, game2) => {
+        let id1 = parseInt(game1._id)
+        let id2 = parseInt(game2._id)
+        if (id1 > id2) {
+            return 1
+        } else if (id1 < id2) {
+            return -1
+        }
+        return 0
+    })
+
     games = games.reduce((out, game) => {
 		let player = game.players.find(element => element.id == id)
 		return [...out, {date: new Date(game.date.getTime()), role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
