@@ -289,7 +289,7 @@ export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
                 fields: [
                     {name: "Total MMR gain/loss", value: `${champs[champion].gained > 0 ? "+" : ""}${Math.floor(champs[champion].gained)}`, inline: true},
                     {name: "Win/Loss", value: `${champs[champion].wins}/${champs[champion].losses}`, inline: true}
-                ]
+                ], footer: ""
             }
         }
     }

@@ -8,7 +8,20 @@ import {ordinal, rating, rate} from "openskill"
 export const getMatchups = async (role,players) => {
 	let out = []
 
-	const users = await User.find({$or: players})
+	let users = await User.find({$or: players})
+
+	users = users.sort((player1, player2) => {
+		let index1 = players.findIndex(element => element._id == player1._id)
+		let index2 = players.findIndex(element => element._id == player2._id)
+	
+
+		if (index1 < index2) {
+			return -1
+		} else if (index1 > index2) {
+			return 1
+		}
+		return 0
+	})
 
 	for (let i=0;i<players.length;i++) {
 		//j=0 = normal + inversed, j=i+1 = normal TODO: CHANGE THIS TO ONLY NORMAL

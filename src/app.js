@@ -21,7 +21,7 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID, getAllGames, getMetaEmbed
+    getGameByMatchID, getAllGames, getMetaEmbed, getUserGames
 } from "./interface/games.js"
 
 import {convertHelpToEmbed} from "./interface/help.js"
@@ -35,6 +35,9 @@ import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js
 
 import {createEmbed, deleteEmbed, handleButtonInteration, handleMenuInteration, updateEmbeds} from "./interface/embed.js"
 import { getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
+import { getMatchups } from "./interface/matchup.js";
+
+import Game from "./models/game.js"
 
 dotenv.config()
 
@@ -69,6 +72,11 @@ client.on("message", async (message) => {
         var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
+            case "test":
+                {
+                    console.log(await getUserGames("278604461436567552"))
+                }    
+            break
             case "queue":
             {
                 message.react('⚔');
@@ -193,6 +201,7 @@ client.on("message", async (message) => {
 
                     if (current_match != null) {
                         console.log("Match found")
+                        current_match.id = (await Game.find()).length + 1
                         match_playing = false
                         player_states = {}
 
@@ -217,13 +226,15 @@ client.on("message", async (message) => {
 
                 if (match_playing) {
                     if (message.author.id in player_states) {
-                        if ("RED" in champs && "BLUE" in champs) {
+                        if ("RED" in champs && "BLUE" in champs && initiator == null) {
+                            initiator = player_states[message.author.id].user
+
                             Object.keys(player_states).forEach(player => {
                                 player_states[player].state = "none"
                             })
 
                             player_states[message.author.id].state = "accept"
-                            initiator = player_states[message.author.id].user
+                            
                             winner = getPlayerSide(current_match, message.author.id, !["win", "won"].includes(cmd))
                             
                             createEmbed(getMatchEndMessageEmbed(initiator, winner, player_states)).send(message.channel)
@@ -728,7 +739,10 @@ export const btnAcceptWinClick = async (embed, button) => {
 
             if (current_match) {
                 let game = await createGame(current_match.game, champs, winner)
-                getGameEmbed(game).send(button.channel)
+
+                if (game != null) {
+                    getGameEmbed(game).send(button.channel)
+                }           
             }
 
             current_match = null

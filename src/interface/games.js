@@ -15,52 +15,58 @@ import {sortMetaData} from "../helpers/sort.js";
 import { createEmbed } from "./embed.js";
 
 export const createGame = async (game, champs, winner) => {
-
-    let newGame = new Game({
-        _id: (await Game.find()).length + 1,
-        matchID: 0,
-        players: await convertToPlayerList(game, champs, winner),
-        winner: winner,
-        date: new Date().setUTCHours(0,0,0,0)
-    })
-
-    await newGame.save()
-
-    for (let player of newGame.players) {
-        let user = await getUser(player.id)
-
-        user.matchHistory.push(newGame._id)
-        user.roles[player.role].mmr = player.afterGameElo
-
-        let location = -1
-        for (let i = 0; i < user.championStats.length; i++) {
-            if (user.championStats[i].name === player.champion) {
-                location = i
-                break
+    try {
+        let newGame = new Game({
+            _id: game.id,
+            matchID: 0,
+            players: await convertToPlayerList(game, champs, winner),
+            winner: winner,
+            date: new Date().setUTCHours(0,0,0,0)
+        })
+    
+        await newGame.save()
+    
+        for (let player of newGame.players) {
+            let user = await getUser(player.id)
+    
+            user.matchHistory.push(newGame._id)
+            user.roles[player.role].mmr = player.afterGameElo
+    
+            let location = -1
+            for (let i = 0; i < user.championStats.length; i++) {
+                if (user.championStats[i].name === player.champion) {
+                    location = i
+                    break
+                }
             }
+    
+            if (location == -1) {
+                location = user.championStats.length
+                user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
+            }
+    
+            if (player.team == winner) {
+                user.roles[player.role].wins += 1
+                user.championStats[location].wins += 1
+    
+            } else {
+                user.roles[player.role].losses += 1
+                user.championStats[location].losses += 1
+            }
+    
+            user.championStats[location].mmrDiff += Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
+    
+    
+            await user.save()
         }
 
-        if (location == -1) {
-            location = user.championStats.length
-            user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
-        }
-
-        if (player.team == winner) {
-            user.roles[player.role].wins += 1
-            user.championStats[location].wins += 1
-
-        } else {
-            user.roles[player.role].losses += 1
-            user.championStats[location].losses += 1
-        }
-
-        user.championStats[location].mmrDiff += Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
-
-
-        await user.save()
+        return newGame
+    } catch (err) {
+        console.log(`Error while adding match ${game.id} to database. Posible duplicate entry`)
+        return null
     }
 
-    return newGame
+    
 }
 
 const convertToPlayerList = async (game, champs, winner) => {
@@ -160,7 +166,17 @@ export const getUserGames = async (id) => {
         return {_id: match}   
     })
 
-    return Game.find({$or: history})
+    let games = await Game.find({$or: history})
+
+    games = games.sort((game1, game2) => {
+        if (parseInt(game1._id) > parseInt(game2._id)) {
+            return 1
+        } else {
+            return -1
+        }
+    })
+
+    return games
 }
 
 export const getMatchHistoryData = async (id) => {

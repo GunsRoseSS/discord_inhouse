@@ -132,9 +132,11 @@ class Embed {
         }
 
         if (this.disabled) {
-            message.buttons.forEach(btn => {
-                btn.setDisabled()
-            })
+            if ("buttons" in message) {
+                message.buttons.forEach(btn => {
+                    btn.setDisabled()
+                })
+            }
         }
             
 
