@@ -13,6 +13,7 @@ import { ordinal } from "openskill";
 import {sortMetaData} from "../helpers/sort.js";
 
 import { createEmbed } from "./embed.js";
+import https from "https";
 
 export const createGame = async (game, champs, winner) => {
     try {
@@ -460,4 +461,60 @@ async function menuSort(embed, menuValue) {
     embed.current_page = 0
     embed.init(data)
     embed.update()
+}
+
+export const getGameStats = (matchID) => {
+    let response = {};
+
+    return new Promise((resolve, reject) => {
+        https.get(`https://api.kieranbaker.uk/league/history/${matchID}`, callback => {
+            let body = '';
+
+            callback.on('data', function (chunk) {
+                body += chunk;
+            })
+
+            callback.on('end', function () {
+                response = JSON.parse(body);
+                if (response !== {}) {
+                    resolve(response);
+                } else {
+                    reject('no data returned');
+                }
+            })
+
+        }).on('error', (e) => {
+            reject(e);
+        })
+    })
+}
+
+export async function insertGameStats(matchID) {
+    let stats;
+    let game = await getGameByMatchID(matchID);
+
+    getGameStats(matchID).then(response => {
+        stats = response
+
+        return new Promise((resolve, reject) => {
+            game.bans = stats.bans;
+            for (let player of game.players) {
+                let champStats = stats.players.find(element => element.champion === player.champion);
+                if (!champStats) {
+                    reject('Player/Champion not found');
+                }
+                delete champStats.champion;
+                player.stats = champStats;
+            }
+            game.save();
+
+            resolve();
+        })
+    }).catch(error => {
+        console.log(error);
+    })
+}
+
+export const updateGame = (matchID, game) => {
+    return Game.findOneAndUpdate({matchID: matchID}, game, {new: true})
 }

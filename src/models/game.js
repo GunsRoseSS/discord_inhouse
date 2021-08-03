@@ -9,10 +9,35 @@ const gameSchema = mongoose.Schema({
         role: String,
         champion: String,
         previousElo: {mu: Number, sigma: Number},
-        afterGameElo: {mu: Number, sigma: Number}
+        afterGameElo: {mu: Number, sigma: Number},
+        stats: {
+            kills: String,
+            deaths: String,
+            assists: String,
+            cs: String,
+            gold: Number,
+            spree: String,
+            multi: String,
+            first: Boolean,
+            champ_dmg_total: Number,
+            champ_dmg_physical: Number,
+            champ_dmg_magic: Number,
+            champ_dmg_true: Number,
+            objective_dmg: Number,
+            turret_dmg: Number,
+            healed_dmg: Number,
+            taken_dmg_total: Number,
+            taken_dmg_physical: Number,
+            taken_dmg_magic: Number,
+            taken_dmg_true: Number,
+            wards_placed: String,
+            control_wards: String,
+            spent: Number,
+        }
     }],
     winner: String,
-    date: Date
+    date: Date,
+    bans: [String]
 })
 
 const Game = mongoose.model("Game", gameSchema)

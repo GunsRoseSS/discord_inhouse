@@ -21,7 +21,7 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID, getAllGames, getMetaEmbed, getUserGames
+    getGameByMatchID, getAllGames, getMetaEmbed, getUserGames, getGameStats, insertGameStats
 } from "./interface/games.js"
 
 import {convertHelpToEmbed} from "./interface/help.js"
@@ -302,12 +302,16 @@ client.on("message", async (message) => {
                     message.react('⛓');
                     let success = await updateMatchID(args[0], args[1]);
                     if (success) {
-                        message.channel.send(`Match id set for game ${args[0]} -> ${args[1]}`)
+                        message.channel.send(`Match id set for game ${args[0]} -> ${args[1]}, stats will be updated soon.`);
+                        insertGameStats(args[1]).then(resolved => {
+                            message.channel.send(`Stats are updated for game ${args[0]} -> ${args[1]}`);
+                        })
+
                     } else {
-                        message.channel.send(`Game id ${args[0]} not found, do you need a pair of glasses?`)
+                        message.channel.send(`Game id ${args[0]} not found, do you need a pair of glasses?`);
                     }
                 } else {
-                    message.channel.send("No, that's not how that works. !link [matchID] [RiotID]")
+                    message.channel.send("No, that's not how that works, idiot. !link [matchID] [RiotID]");
                 }
               break
             case 'rank':
@@ -463,8 +467,8 @@ client.on("message", async (message) => {
                    
                 }
                 break
-            case 'meta':
             case 'champstats':
+            case 'meta':
                 let type;
                 switch (args.length){
                     case 0:
