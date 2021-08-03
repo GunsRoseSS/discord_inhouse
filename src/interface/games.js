@@ -346,6 +346,8 @@ export const getMetaEmbed = (games, type) => {
         return null
     }
 
+    let bans = {}
+
     //generate champion dictionary
     for (let game of games) {
         for (let player of game.players) {
@@ -354,7 +356,8 @@ export const getMetaEmbed = (games, type) => {
                     mmrDiff: Math.floor(ordinal({mu: player.afterGameElo.mu, sigma: player.afterGameElo.sigma}) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma})),
                     wins: player.team === game.winner ? 1 : 0,
                     losses: player.team !== game.winner ? 1 : 0,
-                    pickRate: 1
+                    pickRate: 1,
+                    banRate: 0
                 }
             } else {
                 dictChamps[player.champion].mmrDiff += Math.floor(ordinal({mu: player.afterGameElo.mu, sigma: player.afterGameElo.sigma}) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma}));
@@ -362,9 +365,27 @@ export const getMetaEmbed = (games, type) => {
                 dictChamps[player.champion].losses += player.team !== game.winner ? 1 : 0;
                 dictChamps[player.champion].pickRate += 1;
             }
+
             dictChamps["pickRate"] += 1
         }
+        if ("bans" in game) {
+            game.bans.forEach(ban => {
+                if (Object.keys(bans).includes(ban)) {
+                    bans[ban] += 1
+                } else {
+                    bans[ban] = 1
+                }
+            })
+        }
     }
+
+    Object.entries(bans).forEach(([ban, count]) => {
+        if (Object.keys(dictChamps).includes(ban)) {
+            dictChamps[ban].banRate = count
+        } else {
+            dictChamps[ban] = {mmrDiff: 0, wins: 0, losses: 0, pickRate: 0, banRate: count}
+        }
+    })
 
     dictChamps = sortMetaData(dictChamps, type);
 
@@ -376,7 +397,7 @@ export const getMetaEmbed = (games, type) => {
 
     Object.entries(dictChamps).forEach(([champion, stats], index) => {
         if (champion !== 'pickRate') {
-            pickRate_msg += `${Math.round(stats.pickRate / dictChamps["pickRate"] * 100 * 10 * 10) / 10}%\n`
+            pickRate_msg += `${Math.round(stats.pickRate / dictChamps["pickRate"] * 100 * 10 * 10) / 10}%, ${Math.round(stats.banRate / dictChamps["pickRate"] * 100 * 10 * 10) / 10}%\n`
             champ_msg += `${emojiNumberSelector(index)}: ${getChampionName(champion)} \n`
             mmr_msg += `${checkPositive(stats.mmrDiff)}, ${stats.wins}/${stats.losses} \n`
         }
@@ -394,7 +415,7 @@ export const getMetaEmbed = (games, type) => {
                         inline: true
                     },
                     {
-                        name: "Pick Rate",
+                        name: "Pick/Ban Rate",
                         value: pickRate_msg,
                         inline: true
                     }
@@ -421,6 +442,12 @@ export const getMetaEmbed = (games, type) => {
         case "reverse_pickrate":
             title_msg += "sort: Pickrate Low -> High"
             break
+        case "banrate":
+            title_msg += "sort: Banrate High -> Low"
+            break
+        case "reverse_banrate":
+            title_msg += "sort: Banrate Low -> High"
+            break
     }
 
     return {
@@ -436,6 +463,8 @@ export const getMetaEmbed = (games, type) => {
                 {label: "MMR", description: "Low -> High", value: "mmr_low"},
                 {label: "Pick rate", description: "High -> Low", value: "pick_high"},
                 {label: "Pick rate", description: "Low -> High", value: "pick_low"},
+                {label: "Ban rate", description: "High -> Low", value: "ban_high"},
+                {label: "Ban rate", description: "Low -> High", value: "ban_low"},
             ]
         }
     }
@@ -457,6 +486,11 @@ async function menuSort(embed, menuValue) {
         case "pick_low":
             data = getMetaEmbed(games, "reverse_pickrate")
             break
+        case "ban_high":
+            data = getMetaEmbed(games, "banrate")
+            break
+        case "ban_low":
+            data = getMetaEmbed(games, "reverse_banrate")
     }
     embed.current_page = 0
     embed.init(data)
