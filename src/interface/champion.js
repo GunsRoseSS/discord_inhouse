@@ -15,7 +15,7 @@ const fetchChampionIcon = (champion) => {
 }
 
 export const getPlayerChampionDatav2 = async (id) => {
-    let history = await getUserMatchHistory(id)
+    let history = await getUserMatchHistory(id);
 
     if (!history || history.length === 0) {
         return null
@@ -32,7 +32,7 @@ export const getPlayerChampionDatav2 = async (id) => {
         let win = game.winner === player.team;
 
         let statsEntered = false;
-        if (game.bans){
+        if (game.bans.length > 0){
             statsEntered = true;
         }
 
@@ -186,7 +186,7 @@ export const getAllPlayerChampionEmbedv2 = async (champion) => {
     })
 
     return {
-        title: `${champion} stats for all players`,
+        title: `${getChampionName(champion)} stats for all players`,
         description: "Type **!champion [champion]** to view your own stats for that champion or **!champion [champion] [@player]** to view stats of the champion for another player.",
         thumbnail: fetchChampionIcon(champion),
         pages: pages

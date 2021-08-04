@@ -541,6 +541,7 @@ export async function insertGameStats(matchID) {
             for (let player of game.players) {
                 let champStats = stats.players.find(element => element.champion === player.champion);
                 if (!champStats) {
+                    console.log(player);
                     reject('Player/Champion not found');
                 }
                 delete champStats.champion;
@@ -573,7 +574,7 @@ export const getPlayerStats = async (playerID, userList) => {
         let win = game.winner === player.team;
 
         let statsEntered = false;
-        if (game.bans) {
+        if (game.bans.length > 0) {
             statsEntered = true;
         }
 
