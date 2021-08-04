@@ -577,8 +577,8 @@ export const getPlayerStats = async (playerID, userList) => {
             statsEntered = true;
         }
 
+        let totalkills = 0;
         if (statsEntered) {
-            let totalkills = 0;
             for (let user of game.players) {
                 if (user.team === player.team) {
                     totalkills += parseInt(user.stats.kills);
