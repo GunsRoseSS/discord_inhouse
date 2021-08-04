@@ -402,10 +402,8 @@ client.on("message", async (message) => {
                     } else {
                         let user_id = message.author.id
 
-                        if (args.length > 1) {
-                            if (args[1] !== "all") {
-                                user_id = args[1].substring(3,args[1].length - 1)
-                            }
+                        if (args.length > 1 && args[1] !== "all") {
+                            user_id = args[1].substring(3,args[1].length - 1)
                         }
 
                         if (args[1] !== "all") {

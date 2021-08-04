@@ -17,7 +17,7 @@ const fetchChampionIcon = (champion) => {
 export const getPlayerChampionDatav2 = async (id) => {
     let history = await getUserMatchHistory(id)
 
-    if (!history || history.length == 0) {
+    if (!history || history.length === 0) {
         return null
     }
 
@@ -25,17 +25,54 @@ export const getPlayerChampionDatav2 = async (id) => {
 
     let champions = {}
 
+    let statList = ['kills', 'deaths', 'assists', 'cs', 'gold', 'spree', 'champ_dmg_total', 'objective_dmg', 'turret_dmg', 'healed_dmg', 'taken_dmg_total'];
+
     games.forEach(game => {
-        let index = game.players.findIndex(element => element.id == id)
-        let win = ((game.winner == "BLUE" && index < 5) || (game.winner == "RED" && index >= 5)) ? true : false
-        let player = game.players[index]
+        let player = game.players.find(element => element.id === id);
+        let win = game.winner === player.team;
+
+        let statsEntered = false;
+        if (game.bans){
+            statsEntered = true;
+        }
 
         if (player.champion in champions) {
-            champions[player.champion].wins += win ? 1 : 0
-            champions[player.champion].losses += win ? 0 : 1
-            champions[player.champion].gained += ordinal(player.afterGameElo) - ordinal(player.previousElo)
+            champions[player.champion].wins += win ? 1 : 0;
+            champions[player.champion].losses += win ? 0 : 1;
+            champions[player.champion].gained += ordinal(player.afterGameElo) - ordinal(player.previousElo);
+            if (statsEntered) {
+                for (let stat of statList) {
+                    champions[player.champion][`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
+                    if (champions[player.champion][`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
+                        champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    }
+                }
+                if (champions[player.champion][`best_multi`] < parseInt(player.stats.multi)) {
+                    champions[player.champion][`best_multi`] = parseInt(player.stats.multi);
+                }
+                champions[player.champion].divideBy += 1;
+            }
         } else {
-            champions[player.champion] = {wins: win ? 1 : 0, losses: win ? 0 : 1, gained: ordinal(player.afterGameElo) - ordinal(player.previousElo)}
+            champions[player.champion] = {wins: win ? 1 : 0, losses: win ? 0 : 1, gained: ordinal(player.afterGameElo) - ordinal(player.previousElo)};
+            if (statsEntered) {
+                for (let stat of statList) {
+                    champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    champions[player.champion][`avg_${stat}`] = parseInt(player.stats[`${stat}`]);
+                }
+                champions[player.champion][`best_multi`] = player.stats.multi;
+                champions[player.champion].divideBy = 1;
+            }
+        }
+    })
+
+    Object.values(champions).forEach(champ => {
+        for (let stat of statList){
+            console.log(champ.divideBy);
+            if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree') {
+                champ[`avg_${stat}`] = Math.round(champ[`avg_${stat}`] * 10 / champ.divideBy) / 10; //provides one decimal, useful for lower number stats
+            } else {
+                champ[`avg_${stat}`] = Math.round(champ[`avg_${stat}`] / champ.divideBy);
+            }
         }
     })
 
@@ -271,7 +308,7 @@ export const getPlayerChampionsEmbedv2 = async (id, userList) => {
 }
 
 export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
-    let champs = await getPlayerChampionDatav2(id)
+    let champs = await getPlayerChampionDatav2(id);
 
     if (champs == null) {
         return null
@@ -284,11 +321,15 @@ export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
         if (champion in champs) {
             return {
                 title: `${getChampionName(champion)} stats for ${getMemberNickname(id, userList)}`,
-                description: "Type **!champion [champion]** all to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.",
+                description: "Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.",
                 thumbnail: fetchChampionIcon(champion),
                 fields: [
                     {name: "Total MMR gain/loss", value: `${champs[champion].gained > 0 ? "+" : ""}${Math.floor(champs[champion].gained)}`, inline: true},
-                    {name: "Win/Loss", value: `${champs[champion].wins}/${champs[champion].losses}`, inline: true}
+                    {name: "Win/Loss", value: `${champs[champion].wins}/${champs[champion].losses}`, inline: true},
+                    {name: "Average(Best) K/D/A", value: `${champs[champion].avg_kills}/${champs[champion].avg_deaths}/${champs[champion].avg_assists} (${champs[champion].best_kills})/(${champs[champion].best_deaths})/(${champs[champion].best_assists})`, inline: true},
+                    {name: "Average(Best) CS/Gold earned", value: `:crossed_swords: ${champs[champion].avg_cs}(${champs[champion].best_cs})/\n:coin: ${champs[champion].avg_gold}(${champs[champion].best_gold})`, inline: true},
+                    {name: "Average(Best) Damage dealt to champions/ objectives/turrets", value: `:monkey_face: ${champs[champion].avg_champ_dmg_total}(${champs[champion].best_champ_dmg_total})/\n:dragon_face: ${champs[champion].avg_objective_dmg}(${champs[champion].best_objective_dmg})/\n:tokyo_tower: ${champs[champion].avg_turret_dmg}(${champs[champion].best_turret_dmg})`, inline: true},
+                    {name: "Average(Best) Damage taken/healed", value: `:shield: ${champs[champion].avg_taken_dmg_total}(${champs[champion].best_taken_dmg_total})/\n:ambulance: ${champs[champion].avg_healed_dmg}(${champs[champion].best_healed_dmg})`, inline: true},
                 ], footer: ""
             }
         }
