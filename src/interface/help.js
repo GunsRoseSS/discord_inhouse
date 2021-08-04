@@ -103,6 +103,11 @@ const stats2 = [
         name: '!teammates ?[@player]',
         aliases: '-',
         description: "Displays teammate stats for yourself or for a [@player]"
+    },
+    {
+        name: '!stats ?[@player]',
+        aliases: '!playerstats',
+        description: "Displays general game statistics for yourself or another [@player]"
     }
 ]
 
