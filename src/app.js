@@ -21,7 +21,7 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID, getAllGames, getMetaEmbed, getUserGames, getGameStats, insertGameStats
+    getGameByMatchID, getAllGames, getMetaEmbed, getUserGames, getGameStats, insertGameStats, getPlayerStats
 } from "./interface/games.js"
 
 import {convertHelpToEmbed} from "./interface/help.js"
@@ -640,6 +640,24 @@ client.on("message", async (message) => {
                     colour: 'AFFDD7',
                     pages: pages,
                 }).send(message.channel, message.author)
+                break
+            case 'stats':
+            case 'playerstats':
+                if (args.length > 0) {
+                    user_id = args[0].slice(3, args[0].length - 1);
+                } else {
+                    user_id = message.author.id;
+                }
+                if (!await getUser(user_id)) {
+                    message.channel.send("That, uh, *thing* that you tried to request stats for, doesn't really exist.");
+                    break
+                }
+                embedData = await getPlayerStats(user_id, userList);
+                if (embedData){
+                    createEmbed(embedData).send(message.channel, message.author);
+                } else {
+                    message.channel.send('No games found for this player.');
+                }
                 break
             case "uwu":
                 {

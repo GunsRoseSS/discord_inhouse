@@ -1,5 +1,3 @@
-import {MessageEmbed} from "discord.js"
-
 import Game from "../models/game.js";
 
 import {getUser, getUserElo, getUserMatchHistory} from "./user.js"
@@ -7,13 +5,13 @@ import {calculateNewElo} from "./matchup.js";
 
 import {checkPositive, formatDate, getChampionName} from "../helpers/format.js"
 import {emojiNumberSelector, getRoleEmoji} from "../helpers/emoji.js"
-import EasyEmbedPages from 'easy-embed-pages';
 
-import { ordinal } from "openskill";
+import {ordinal} from "openskill";
 import {sortMetaData} from "../helpers/sort.js";
 
-import { createEmbed } from "./embed.js";
+import {createEmbed} from "./embed.js";
 import https from "https";
+import {getMemberNickname} from "../helpers/discord.js";
 
 export const createGame = async (game, champs, winner) => {
     try {
@@ -22,17 +20,17 @@ export const createGame = async (game, champs, winner) => {
             matchID: 0,
             players: await convertToPlayerList(game, champs, winner),
             winner: winner,
-            date: new Date().setUTCHours(0,0,0,0)
+            date: new Date().setUTCHours(0, 0, 0, 0)
         })
-    
+
         await newGame.save()
-    
+
         for (let player of newGame.players) {
             let user = await getUser(player.id)
-    
+
             user.matchHistory.push(newGame._id)
             user.roles[player.role].mmr = player.afterGameElo
-    
+
             let location = -1
             for (let i = 0; i < user.championStats.length; i++) {
                 if (user.championStats[i].name === player.champion) {
@@ -40,24 +38,24 @@ export const createGame = async (game, champs, winner) => {
                     break
                 }
             }
-    
+
             if (location == -1) {
                 location = user.championStats.length
                 user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
             }
-    
+
             if (player.team == winner) {
                 user.roles[player.role].wins += 1
                 user.championStats[location].wins += 1
-    
+
             } else {
                 user.roles[player.role].losses += 1
                 user.championStats[location].losses += 1
             }
-    
+
             user.championStats[location].mmrDiff += Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
-    
-    
+
+
             await user.save()
         }
 
@@ -67,7 +65,7 @@ export const createGame = async (game, champs, winner) => {
         return null
     }
 
-    
+
 }
 
 const convertToPlayerList = async (game, champs, winner) => {
@@ -159,12 +157,12 @@ export const getAllGames = async () => {
 export const getUserGames = async (id) => {
     let history = await getUserMatchHistory(id)
 
-    if (history.length === 0){
+    if (history.length === 0) {
         return []
     }
 
     history = history.map(match => {
-        return {_id: match}   
+        return {_id: match}
     })
 
     let games = await Game.find({$or: history})
@@ -234,7 +232,7 @@ export const convertMatchHistoryToEmbed = (name, historyData) => {
     })
 
     let links = historyData.matches.map(match => {
-        if (match > 10000){
+        if (match > 10000) {
             return `https://matchhistory.euw.leagueoflegends.com/en/#match-details/EUW1/${match}`
         } else {
             return `No matchID linked.`
@@ -342,7 +340,7 @@ export const getMetaEmbed = (games, type) => {
         'pickRate': 0
     };
 
-    if (games.length === 0){
+    if (games.length === 0) {
         return null
     }
 
@@ -353,14 +351,20 @@ export const getMetaEmbed = (games, type) => {
         for (let player of game.players) {
             if (dictChamps[player.champion] === undefined) {
                 dictChamps[player.champion] = {
-                    mmrDiff: Math.floor(ordinal({mu: player.afterGameElo.mu, sigma: player.afterGameElo.sigma}) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma})),
+                    mmrDiff: Math.floor(ordinal({
+                        mu: player.afterGameElo.mu,
+                        sigma: player.afterGameElo.sigma
+                    }) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma})),
                     wins: player.team === game.winner ? 1 : 0,
                     losses: player.team !== game.winner ? 1 : 0,
                     pickRate: 1,
                     banRate: 0
                 }
             } else {
-                dictChamps[player.champion].mmrDiff += Math.floor(ordinal({mu: player.afterGameElo.mu, sigma: player.afterGameElo.sigma}) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma}));
+                dictChamps[player.champion].mmrDiff += Math.floor(ordinal({
+                    mu: player.afterGameElo.mu,
+                    sigma: player.afterGameElo.sigma
+                }) - ordinal({mu: player.previousElo.mu, sigma: player.previousElo.sigma}));
                 dictChamps[player.champion].wins += player.team === game.winner ? 1 : 0;
                 dictChamps[player.champion].losses += player.team !== game.winner ? 1 : 0;
                 dictChamps[player.champion].pickRate += 1;
@@ -403,7 +407,8 @@ export const getMetaEmbed = (games, type) => {
         }
 
         if (((index) % PAGE_SIZE === 0 && index !== 0) || index === Object.keys(dictChamps).length - 1) {
-            pages.push({fields: [
+            pages.push({
+                fields: [
                     {
                         name: "Champion",
                         value: champ_msg,
@@ -419,7 +424,8 @@ export const getMetaEmbed = (games, type) => {
                         value: pickRate_msg,
                         inline: true
                     }
-                ]})
+                ]
+            })
 
             pickRate_msg = ""
             champ_msg = ""
@@ -549,6 +555,137 @@ export async function insertGameStats(matchID) {
     })
 }
 
-export const updateGame = (matchID, game) => {
-    return Game.findOneAndUpdate({matchID: matchID}, game, {new: true})
+export const getPlayerStats = async (playerID, userList) => {
+    let history = await getUserMatchHistory(playerID);
+
+    if (!history || history.length === 0) {
+        return null
+    }
+
+    let games = await Game.find({$or: history.map(match => match = {_id: match})});
+
+    let stats = {};
+
+    let statList = ['kills', 'deaths', 'assists', 'cs', 'gold', 'spree', 'champ_dmg_total', 'objective_dmg', 'turret_dmg', 'healed_dmg', 'taken_dmg_total', 'wards_placed', 'control_wards'];
+
+    games.forEach(game => {
+        let player = game.players.find(element => element.id === playerID);
+        let win = game.winner === player.team;
+
+        let statsEntered = false;
+        if (game.bans) {
+            statsEntered = true;
+        }
+
+        if (statsEntered) {
+            let totalkills = 0;
+            for (let user of game.players) {
+                if (user.team === player.team) {
+                    totalkills += parseInt(user.stats.kills);
+                }
+            }
+        }
+
+        if (Object.keys(stats).length !== 0) {
+            stats.wins += win ? 1 : 0;
+            stats.losses += win ? 0 : 1;
+            stats.gained += ordinal(player.afterGameElo) - ordinal(player.previousElo);
+            if (statsEntered) {
+                for (let stat of statList) {
+                    if (player.stats[`${stat}`] !== '-'){
+                        stats[`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
+                        if (stats[`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
+                            stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                        }
+                    }
+                }
+                stats.first += player.stats.first ? 1 : 0;
+                if (stats[`best_multi`] < parseInt(player.stats.multi)) {
+                    stats[`best_multi`] = parseInt(player.stats.multi);
+                }
+                stats.divideBy += 1;
+                if (stats.best_kp < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10) {
+                    stats.best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                }
+                stats.avg_kp += Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+            }
+        } else {
+            stats = {
+                wins: win ? 1 : 0,
+                losses: win ? 0 : 1,
+                gained: ordinal(player.afterGameElo) - ordinal(player.previousElo)
+            };
+            if (statsEntered) {
+                for (let stat of statList) {
+                    stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    stats[`avg_${stat}`] = parseInt(player.stats[`${stat}`]);
+                }
+                stats.first = player.stats.first ? 1 : 0;
+                stats[`best_multi`] = player.stats.multi;
+                stats.divideBy = 1;
+                stats.avg_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                stats.best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+            }
+        }
+    })
+
+    for (let stat of statList) {
+        if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
+            stats[`avg_${stat}`] = Math.round(stats[`avg_${stat}`] * 10 / stats.divideBy) / 10; //provides one decimal, useful for lower number stats
+        } else {
+            stats[`avg_${stat}`] = Math.round(stats[`avg_${stat}`] / stats.divideBy);
+        }
+    }
+    stats.first = Math.round(stats.first / stats.divideBy * 1000) / 10;
+    stats.avg_kp = Math.round(stats.avg_kp / stats.divideBy * 10) / 10;
+
+    return {
+        title: `:chart_with_upwards_trend: Statistics for ${getMemberNickname(playerID, userList)} :chart_with_upwards_trend:`,
+        description: "Type **!hof** or **!hof [champion]** to see the top scores for all/a single champion.",
+        fields: [
+            {
+                name: "Total MMR gain/loss",
+                value: `${stats.gained > 0 ? "+" : ""}${Math.floor(stats.gained)}`,
+                inline: true
+            },
+            {name: "Win/Loss", value: `${stats.wins}/${stats.losses}`, inline: true},
+            {
+                name: "Average(Best) K/D/A",
+                value: `${stats.avg_kills}/${stats.avg_deaths}/${stats.avg_assists} (${stats.best_kills})/(${stats.best_deaths})/(${stats.best_assists})`,
+                inline: true
+            },
+            {
+                name: "Average(Best) Kill participation %",
+                value: `:raised_hands: ${stats.avg_kp}%(${stats.best_kp}%)`,
+                inline: true
+            },
+            {
+                name: "Average(Best) CS/Gold earned",
+                value: `:crossed_swords: ${stats.avg_cs}(${stats.best_cs})/\n:coin: ${stats.avg_gold}(${stats.best_gold})`,
+                inline: true
+            },
+            {
+                name: "Average(Best) Damage dealt to champions/ objectives/turrets",
+                value: `:monkey_face: ${stats.avg_champ_dmg_total}(${stats.best_champ_dmg_total})/\n:dragon_face: ${stats.avg_objective_dmg}(${stats.best_objective_dmg})/\n:tokyo_tower: ${stats.avg_turret_dmg}(${stats.best_turret_dmg})`,
+                inline: true
+            },
+            {
+                name: "Average(Best) Damage taken/healed",
+                value: `:shield: ${stats.avg_taken_dmg_total}(${stats.best_taken_dmg_total})/\n:ambulance: ${stats.avg_healed_dmg}(${stats.best_healed_dmg})`,
+                inline: true
+            },
+            {
+                name: "Average(Best) Wards/Control wards placed",
+                value: `:flashlight: ${stats.avg_wards_placed}(${stats.best_wards_placed})/\n:eye: ${stats.avg_control_wards}(${stats.best_control_wards})`,
+                inline: true
+            },
+            {
+                name: "First Blood %",
+                value: `:drop_of_blood: ${stats.first}%`,
+                inline: true
+            },
+        ], footer: ""
+    }
+
+
 }
