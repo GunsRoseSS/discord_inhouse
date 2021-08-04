@@ -176,7 +176,7 @@ client.on("message", async (message) => {
             case "start":
                 message.react('☄');
 
-                if (!match_playing) {
+                if (current_match == null) {
                     let queue = await playersInQueue()
                     let inQueue = false;
                     for (let player of queue){
@@ -493,7 +493,7 @@ client.on("message", async (message) => {
                 embed = createEmbed(e)
 
                 if (embed){
-                    embed.send(message.channel, message.author)
+                    embed.send(message.channel, message.author.id)
                     /*
                     embed.start({
                         channel: message.channel,

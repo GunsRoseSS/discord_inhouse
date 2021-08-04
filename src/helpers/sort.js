@@ -89,6 +89,17 @@ export const sortMetaData = (data, type) => {
                 return first[1].pickRate - second[1].pickRate;
             });
             break
+        case 'banrate':
+            items.sort(function(first, second) {
+                return second[1].banRate - first[1].banRate;
+                
+            })
+            break
+        case 'reverse_banrate':
+            items.sort(function(first, second) {
+                return first[1].banRate - second[1].banRate;
+            })
+            break
     }
 
     let sortedData={}
