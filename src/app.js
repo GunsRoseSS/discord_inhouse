@@ -5,6 +5,8 @@ import EasyEmbedPages from 'easy-embed-pages';
 import disbut from "discord-buttons";
 import fs from "fs";
 
+import { ordinal } from "openskill";
+
 import {createUser, getUser} from "./interface/user.js"
 import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js"
 import {
@@ -35,7 +37,7 @@ import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js
 
 import {createEmbed, deleteEmbed, handleButtonInteration, handleMenuInteration, updateEmbeds} from "./interface/embed.js"
 import { getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
-import { getMatchups } from "./interface/matchup.js";
+import { calculateExpectedOutcome, getMatchups } from "./interface/matchup.js";
 
 import Game from "./models/game.js"
 
@@ -72,9 +74,50 @@ client.on("message", async (message) => {
         var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
-            case "test":
+            case "addgame":
                 {
-                    console.log(await getUserGames("278604461436567552"))
+                    if (message.author.id == "278604461436567552") {
+                        console.log("Adding game")
+                        let blue = [
+                            {id: "154648565522759681", champ: "Trundle"},
+                            {id: "139392064386367489", champ: "Viego"},
+                            {id: "114071480526045191", champ: "Orianna"},
+                            {id: "219125929471901706", champ: "Ezreal"},
+                            {id: "347380823810637825", champ: "Thresh"}
+                        ]
+
+                        let red = [
+                            {id: "328912750128660481", champ: "Kayle"},
+                            {id: "114058651651538952", champ: "XinZhao"},
+                            {id: "231396629297627137", champ: "KogMaw"},
+                            {id: "157881124939497472", champ: "Lucian"},
+                            {id: "182862839692787712", champ: "Swain"}
+                        ]
+
+                        let m = []
+
+                        let r = ["top", "jgl", "mid", "adc", "sup"]
+
+                        for (let i=0;i<5;i++) {
+                            let u1 = await getUser(blue[i].id)
+                            let u2 = await getUser(red[i].id)
+                            m.push({player1: blue[i].id, player2: red[i].id, probability: calculateExpectedOutcome(ordinal(u1.roles[r[i]].mmr), ordinal(u2.roles[r[i]].mmr))})
+                        }
+
+                        let c = {}
+                        
+                        c["BLUE"] = blue.map(player => {
+                            return player.champ
+                        })
+
+                        c["RED"] = red.map(player => {
+                            return player.champ
+                        })          
+
+                        await createGame(17, m, c,"BLUE")
+
+                        console.log("Done")
+                    }
                 }    
             break
             case "queue":
@@ -758,7 +801,7 @@ export const btnAcceptWinClick = async (embed, button) => {
             deleteEmbed(embed)
 
             if (current_match) {
-                let game = await createGame(current_match.game, champs, winner)
+                let game = await createGame(current_match.id, current_match.game, champs, winner)
 
                 if (game != null) {
                     getGameEmbed(game).send(button.channel)

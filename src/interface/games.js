@@ -13,10 +13,10 @@ import {createEmbed} from "./embed.js";
 import https from "https";
 import {getMemberNickname} from "../helpers/discord.js";
 
-export const createGame = async (game, champs, winner) => {
+export const createGame = async (id, game, champs, winner) => {
     try {
         let newGame = new Game({
-            _id: game.id,
+            _id: id,
             matchID: 0,
             players: await convertToPlayerList(game, champs, winner),
             winner: winner,
