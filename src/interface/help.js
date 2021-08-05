@@ -105,6 +105,11 @@ const stats2 = [
         description: "Displays teammate stats for yourself or for a [@player]"
     },
     {
+        name: '!opponents ?[@player]',
+        aliases: "!nemesis",
+        description: "Displays your or another players best/worst opponents (wins/lp gain)"
+    },
+    {
         name: '!stats ?[@player]',
         aliases: '!playerstats',
         description: "Displays general game statistics for yourself or another [@player]"
