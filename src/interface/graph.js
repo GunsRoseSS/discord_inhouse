@@ -3,7 +3,6 @@ import ChartJSImage from "chart.js-image"
 import Game from "../models/game.js"
 
 import { getUserMatchHistory } from "./user.js"
-import { formatDate } from "../helpers/format.js"
 
 import { ordinal } from "openskill"
 
@@ -23,19 +22,21 @@ export const generateRoleGraph = async (role, userList, count = 30) => {
     let end = games[games.length - 1].date;
     start.setDate(start.getDate() - 1);
 
+    let num_games = games.length
+
     //Retrieve the data for the players in the specified role
-    games = games.reduce((out, game) => {
+    games = games.reduce((out, game, index) => {
         let i = roles.indexOf(role)
         if (game.players[i].id in out) {
-            out[game.players[i].id].push({date: game.date, before: ordinal(game.players[i].previousElo), after: ordinal(game.players[i].afterGameElo)})
+            out[game.players[i].id].push({id: index, date: game.date, before: ordinal(game.players[i].previousElo), after: ordinal(game.players[i].afterGameElo)})
         } else {
-            out[game.players[i].id] = [{date: game.date, before: ordinal(game.players[i].previousElo), after: ordinal(game.players[i].afterGameElo)}]
+            out[game.players[i].id] = [{id: index, date: game.date, before: ordinal(game.players[i].previousElo), after: ordinal(game.players[i].afterGameElo)}]
         }
 
         if (game.players[i + 5].id in out) {
-            out[game.players[i + 5].id].push({date: game.date, before: ordinal(game.players[i + 5].previousElo), after: ordinal(game.players[i + 5].afterGameElo)})
+            out[game.players[i + 5].id].push({id: index, date: game.date, before: ordinal(game.players[i + 5].previousElo), after: ordinal(game.players[i + 5].afterGameElo)})
         } else {
-            out[game.players[i + 5].id] = [{date: game.date, before: ordinal(game.players[i + 5].previousElo), after: ordinal(game.players[i + 5].afterGameElo)}]
+            out[game.players[i + 5].id] = [{id: index, date: game.date, before: ordinal(game.players[i + 5].previousElo), after: ordinal(game.players[i + 5].afterGameElo)}]
         }
         return out
     }, {})
@@ -50,13 +51,26 @@ export const generateRoleGraph = async (role, userList, count = 30) => {
 
     games = Object.keys(games).reduce((out, key, i) => {
         out.labels.push(users[i])
-        out.data.push(fillRange(start, end, flattenDates(games[key])))
+        let j = 0
+        out.data.push(games[key].reduce((o, game, index) => {
+            while (j < game.id) {
+                o.push(game.before)
+                j++
+            }
+            o.push(game.after)
+            j++
+            if (index == games[key].length-1) {
+                while (j < num_games) {
+                    o.push(game.after)
+                    j++
+                }
+            }
+            return o
+        }, [games[key][0].before]))
         return out
     }, {"labels": [], "data": []})
 
-    let dates = getDateRange(start, end)
-
-    return await createGraph(`MMR variation for ${roles_full[roles.indexOf(role)]} (Last ${count} games)`, dates, games.labels, games.data)
+    return createGraph(`MMR variation for ${roles_full[roles.indexOf(role)]} (Last ${count} games)`, Array.from(Array(num_games+1).keys()), games.labels, games.data)
 }
 
 export const generateGraph = async (id, nickname, count = 30) => {
@@ -76,10 +90,10 @@ export const generateGraph = async (id, nickname, count = 30) => {
         return out
     }, {"labels": [], "data": []})
 
-    return await createGraph(`MMR variation for ${nickname} past ${count} games`, data.dates, graphData.labels, graphData.data)
+    return createGraph(`MMR variation for ${nickname} past ${count} games`, data.dates, graphData.labels, graphData.data)
 }
 
-export const getUserGraphData = async (id, count = 30) => {
+export const getUserGraphData = async (id) => {
     let matches = await getUserMatchHistory(id)
 
     if (!matches || matches.length == 0) {
@@ -103,28 +117,44 @@ export const getUserGraphData = async (id, count = 30) => {
         return 0
     })
 
-    games = games.reduce((out, game) => {
+    games = games.reduce((out, game, index) => {
 		let player = game.players.find(element => element.id == id)
-		return [...out, {date: new Date(game.date.getTime()), role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
+		return [...out, {id: index, role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
 	}, [])
 
-    
-    let start = new Date(games[0].date.getTime())
-    let end = games[games.length - 1].date
-    start.setDate(start.getDate() - 1)
+    let num_games = games.length
 
-    games = splitByRole(games)
+    let data = splitByRole(games)
 
-    games = games.map(role => {
+
+    data = data.map(role => {
         if (role.length == 0) {
             return role
         }
-        return fillRange(start, end, flattenDates(role))
+        let i = 0
+        return role.reduce((out, game, index) => {
+            while (i < game.id) {
+                out.push(game.before)
+                i++
+            }
+            out.push(game.after)
+            i++
+            if (index == role.length-1) {
+                while (i < num_games) {
+                    out.push(game.after)
+                    i++
+                }
+            }
+            return out
+        }, [role[0].before])
     })
 
-    let dates = getDateRange(start, end)
+    let dates = games.map(game => {
+        return game.id
+    })
 
-    return {data: games, dates: dates}
+    return {data: data, dates: [...dates, num_games]}
+
 }
 
 const createGraph = async (title, labels, legend, data) => {
@@ -247,94 +277,12 @@ const createGraph = async (title, labels, legend, data) => {
     return `${random}.png`
 }
 
-//Fills in missing data from user data
-export const fillRange = (start, end, data) => {
-    let current_date = new Date(start.getTime())
-    current_date.setDate(current_date.getDate() + 1)
-
-    let filled =  data.reduce((out, match) => {
-        while (current_date < match.date) {
-
-            out.push(match.before)
-            current_date.setDate(current_date.getDate() + 1)
-        }
-
-        out.push(match.after)
-
-        current_date.setDate(current_date.getDate() + 1)
-
-        return out
-    }, [data[0].before])
-
-    let val = filled[filled.length-1]
-
-    while (current_date <= end) {
-        filled.push(val)
-        current_date.setDate(current_date.getDate() + 1)
-    }
-
-    return filled
-}
-
-//Generates date labels for graph
-const getDateRange = (start, end) => {
-    let current = new Date(start.getTime())
-
-    let out = []
-
-    while (current <= end) {
-        out = [...out, formatDate(new Date(current.getTime()), true)]
-        current.setDate(current.getDate() + 1)
-    }
-
-    return out
-}
-
 //Splits games by role
 export const splitByRole = (games) => {
     const roles = ["top", "jgl", "mid", "adc", "sup"]
 
     return games.reduce((out, game) => {
-        out[roles.indexOf(game.role)].push({date: game.date, before: game.previousElo, after: game.afterGameElo})
+        out[roles.indexOf(game.role)].push({id: game.id, date: game.date, before: game.previousElo, after: game.afterGameElo})
         return out    
     }, [[],[],[],[],[]])
-}
-
-//Takes a list of games for a player
-//If multiple games take place on the same date, flatten them into 1 mmr value
-export const flattenDates = (roleData) => {
-    if (roleData.length > 1) {
-
-        roleData = roleData.reduce((out, data) => {
-            if (out.buf.length == 0 || out.buf[0].date.toString() == data.date.toString()) {
-                out.buf.push(data)
-                return out
-            }
-
-            out.flat.push(flatten(out.buf))
-
-            out.buf = [data]
-
-            return out
-
-        }, {flat: [], buf: []})
-
-        if (roleData.buf.length > 0) {
-            roleData.flat.push(flatten(roleData.buf))
-        }
-
-        return roleData.flat
-
-    } else {
-        return roleData
-    }
-   
-}
-
-//Takes a list of mmrs on the same date and flattens them into 1 value
-const flatten = (data) => {
-    let start = data[0].before
-    let end = data[data.length-1].after
-
-    return {date: data[0].date, before: start, after: end}
 }
