@@ -70,6 +70,10 @@ client.on("ready", async() => {
     setInterval(updateEmbeds, 60000)
 })
 
+client.on('guildCreate', guild => {
+    guild.systemChannel.send(`Hello, I'm Inhouse Bot. For a list of my commands, please type !help. Please make sure I am set up properly before using me.`);
+});
+
 client.on("guildMemberAdd", async() => {
     userList = await fetchGuildMemberNicknames(client);
 })
@@ -721,7 +725,7 @@ client.on("message", async (message) => {
                     pages = await convertOpponentDataToEmbed(embedData);
                     createEmbed({
                         title: `<:nat1:868637342909472789> Opponent stats for ${nickname} <:nat1:868637342909472789>`,
-                        description: 'See your easiest and hardest opponents!',
+                        description: 'See your hardest and easiest opponents!',
                         colour: '#AFFDD7',
                         pages: pages,
                     }).send(message.channel, message.author.id)
@@ -763,6 +767,10 @@ client.on("message", async (message) => {
             case "dab":
             case "cancer":
                 message.channel.send('I hate you for making me do this.', {files: ["https://cdn.discordapp.com/attachments/863014796915638296/871739279515213824/dabgif.gif"]})
+                break
+            case "creators":
+            case "fathers":
+                message.channel.send('I was made by <@278604461436567552> and <@139392064386367489>! That means I have 2 dads hihi');
                 break
             default:
                 message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
