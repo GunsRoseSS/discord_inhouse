@@ -30,7 +30,7 @@ import {convertHelpToEmbed} from "./interface/help.js"
 import {generateGraph, generateRoleGraph} from "./interface/graph.js"
 import {findMatch} from "./interface/matchmaking.js"
 import {formatChampions, formatRoles} from "./helpers/format.js";
-import {convertTeammateDataToEmbed, getTeammateStats} from "./interface/teammates.js";
+import {convertTeammateDataToEmbed, getTeammateStats, convertOpponentDataToEmbed} from "./interface/teammates.js";
 
 import {getAllRankingEmbed, getUserRankEmbed, getRoleRankEmbed, getAverageRankingData} from "./interface/ranking.js"
 import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js";
@@ -76,9 +76,7 @@ client.on("message", async (message) => {
         switch (cmd) {
             case "test":
                 {
-                    let start = new Date()
-                    await new Promise(r => setTimeout(r, 2000));
-                    console.log(new Date() - start)
+                    
                 }
                 break
             case "addgame":
@@ -681,7 +679,7 @@ client.on("message", async (message) => {
                     description: 'See your best and worst teammates!',
                     colour: 'AFFDD7',
                     pages: pages,
-                }).send(message.channel, message.author)
+                }).send(message.channel, message.author.id)
                 break
             case 'stats':
             case 'playerstats':
@@ -699,6 +697,26 @@ client.on("message", async (message) => {
                     createEmbed(embedData).send(message.channel, message.author);
                 } else {
                     message.channel.send('No games found for this player.');
+                }
+                break
+            case "opponents":
+            case "nemesis":
+                {
+                    message.react('😈');
+                    if (args.length < 1) {
+                        user_id = message.author.id;
+                    } else {
+                        user_id = args[0].slice(3, args[0].length - 1);
+                    }
+                    nickname = getMemberNickname(user_id, userList);
+                    embedData = await getTeammateStats(user_id, true);
+                    pages = await convertOpponentDataToEmbed(embedData);
+                    createEmbed({
+                        title: `<:nat1:868637342909472789> Opponent stats for ${nickname} <:nat1:868637342909472789>`,
+                        description: 'See your easiest and hardest opponents!',
+                        colour: '#AFFDD7',
+                        pages: pages,
+                    }).send(message.channel, message.author.id)
                 }
                 break
             case "uwu":

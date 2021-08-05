@@ -26,16 +26,30 @@ export const getStateEmoji = (state) => {
 }
 
 export const emojiGainedSelector = (mmr) => {
-    if (mmr >= 100) {
+    if (mmr >= 150) {
         return ":crown:"
-    } else if (mmr >= 50) {
+    } else if (mmr >= 75) {
         return ":thumbup:"
     } else if (mmr >= 0) {
         return ":neutral_face:"
-    } else if (mmr >= -50) {
+    } else if (mmr >= -75) {
         return ":skull:"
     } else {
         return ":person_in_motorized_wheelchair:"
+    }
+}
+
+export const emojiOpponentGainedSelector = (mmr) => {
+    if (mmr >= 150) {
+        return ":free:"
+    } else if (mmr >= 75) {
+        return ":thumbup:"
+    } else if (mmr >= 0) {
+        return ":neutral_face:"
+    } else if (mmr >= -75) {
+        return "<:arnoldcry:872902201356476426>"
+    } else {
+        return ":rage:"
     }
 }
 
