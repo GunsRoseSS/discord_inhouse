@@ -93,7 +93,7 @@ export const generateGraph = async (id, nickname, count = 30) => {
     return createGraph(`MMR variation for ${nickname} past ${count} games`, data.dates, graphData.labels, graphData.data)
 }
 
-export const getUserGraphData = async (id) => {
+export const getUserGraphData = async (id, count) => {
     let matches = await getUserMatchHistory(id)
 
     if (!matches || matches.length == 0) {
