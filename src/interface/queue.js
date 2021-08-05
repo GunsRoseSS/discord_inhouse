@@ -10,7 +10,7 @@ export const addToQueue = async (id, roles) => {
 	var user = await Queue.findById(id)
 
 	if (!user) {
-		user = new Queue({_id:id, roles:[]})
+		user = new Queue({_id:id, roles:[], time: Date.now()})
 	}
 
 	roles.forEach((role) => {
@@ -32,12 +32,16 @@ export const clearQueue = async () => {
 	return status.deletedCount
 }
 
+export const removePlayersFromQueue = async (players) => {
+	await Queue.deleteMany({$or: players.map(player => player = {_id: player})})
+}
+
 export const playersInQueue = async () => {
 	return Queue.find()
 }
 
 export const playersInRole = async (role) => {
-	return Queue.find({roles: role}, "_id")
+	return Queue.find({roles: role}, "_id time")
 }
 
 export const getQueueEmbed = async () => {

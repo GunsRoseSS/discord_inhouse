@@ -8,7 +8,7 @@ import {ordinal, rating, rate} from "openskill"
 export const getMatchups = async (role,players) => {
 	let out = []
 
-	let users = await User.find({$or: players})
+	let users = await User.find({$or: players.map(player => player = {_id: player._id})})
 
 	users = users.sort((player1, player2) => {
 		let index1 = players.findIndex(element => element._id == player1._id)
@@ -24,18 +24,22 @@ export const getMatchups = async (role,players) => {
 	})
 
 	for (let i=0;i<players.length;i++) {
-		//j=0 = normal + inversed, j=i+1 = normal TODO: CHANGE THIS TO ONLY NORMAL
 		for (let j=0;j<players.length;j++) {
 			if (i != j) {
 				let player1Elo = ordinal(users[i].roles[role].mmr)
 				let player2Elo = ordinal(users[j].roles[role].mmr)
 	
-				out.push({player1: users[i]._id, player2: users[j]._id, probability: calculateExpectedOutcome(player1Elo, player2Elo)})
+				out.push({player1: users[i]._id, player2: users[j]._id, probability: calculateExpectedOutcome(player1Elo, player2Elo), weight: calculateQueueWeight(players[i].time) + calculateQueueWeight(players[j].time)})
 			}		
 		}
 	}
 
 	return out
+}
+
+const calculateQueueWeight = (time) => {
+	let duration = (Date.now() - time) / 1000
+	return Math.pow(duration / 500, 4)
 }
 
 export const calculateExpectedOutcome = (elo1, elo2) => {

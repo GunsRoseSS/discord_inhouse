@@ -8,7 +8,7 @@ import fs from "fs";
 import { ordinal } from "openskill";
 
 import {createUser, getUser} from "./interface/user.js"
-import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue} from "./interface/queue.js"
+import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue, removePlayersFromQueue} from "./interface/queue.js"
 import {
     getMatchMessageEmbed,
     getMatchEndMessageEmbed,
@@ -74,6 +74,13 @@ client.on("message", async (message) => {
         var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
+            case "test":
+                {
+                    let start = new Date()
+                    await new Promise(r => setTimeout(r, 2000));
+                    console.log(new Date() - start)
+                }
+                break
             case "addgame":
                 {
                     if (message.author.id == "278604461436567552") {
@@ -773,7 +780,11 @@ export const btnAcceptClick = async (embed, button) => {
             await button.channel.send("Please insert your lineups using !lineup [top] [jgl] [mid]...");
             match_playing = true
 
-            await clearQueue()
+            let player_list = current_match.game.reduce((players, matchup) => {
+                return [...players, matchup.player1, matchup.player2]   
+            }, [])
+
+            await removePlayersFromQueue(player_list)
 
         } else {
             embed.init(getMatchMessageEmbed(current_match, player_states))

@@ -46,7 +46,7 @@ export const getMatchMessageEmbed = (match, player_states, started = false) => {
         fields: [
             {name: "BLUE", value: msg_blue_side, inline: true},
             {name: "RED", value: msg_red_side, inline: true},
-            {name: "OUTCOME", value: msg_outcome, inline: true},
+            {name: "OUTCOME (BLUE)", value: msg_outcome, inline: true},
         ]
     }
 

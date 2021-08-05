@@ -4,6 +4,7 @@ import {getMatchups} from "./matchup.js"
 //If a game is found within these thresholds => return that game
 const OUTCOME_DEVIATION_THRESHOLD = 0.005 //Deviation of game winrate from 50% => 0.005 = 49.5% - 50.5%
 const MATCHUP_DEVIATION_THRESHOLD = 0.05 //Average deviation of matchup winrates from 50% => 0.15 = 35.0% - 65.0%
+const SEARCH_TIMEOUT = 2000
 
 //0.0, 0.0 => really slow >5000ms, best match
 //0.005, 0.10 => really fast <1000ms, pretty good matching
@@ -14,15 +15,18 @@ const MATCHUP_DEVIATION_THRESHOLD = 0.05 //Average deviation of matchup winrates
 
 //Find the best match using the current queue
 export const findMatch = async () => {
-    let start = new Date()
+
 
     let role_permutations = await generateRolePermutations()
 
-    start = new Date()
     
     let best = null
 
     let complete = false
+
+    let best_games = []
+
+    let start = new Date()
 
     //Check every posible game
     //if a player is in more than 1 role, the game is dropped
@@ -49,14 +53,18 @@ export const findMatch = async () => {
                                         let expected = (t.probability + j.probability + m.probability + a.probability + s.probability) / 5.0
                                         let outcome_deviation = Math.abs(0.5 - expected)
 
+                                        if (outcome_deviation <= OUTCOME_DEVIATION_THRESHOLD && average_deviation <= MATCHUP_DEVIATION_THRESHOLD) {
+                                            best_games.push({expected_outcome: expected, outcome_deviation: outcome_deviation, avg_matchup_deviation: average_deviation, game: [t,j,m,a,s]})
+                                            if (new Date() - start >= SEARCH_TIMEOUT) {
+                                                complete = true
+                                            }
+                                        }
+
                                         if (best === null) {
                                             best = {expected_outcome: expected, outcome_deviation: outcome_deviation, avg_matchup_deviation: average_deviation, game: [t,j,m,a,s]}
                                         } else {
                                             if (outcome_deviation  <= best.outcome_deviation && average_deviation <= best.avg_matchup_deviation)  {
                                                 best = {expected_outcome: expected, outcome_deviation: outcome_deviation, avg_matchup_deviation: average_deviation, game: [t,j,m,a,s]}
-                                                if (outcome_deviation <= OUTCOME_DEVIATION_THRESHOLD && average_deviation <= MATCHUP_DEVIATION_THRESHOLD) {
-                                                    complete = true
-                                                }
                                             }
                                         }
                                     }					
@@ -68,6 +76,24 @@ export const findMatch = async () => {
             }							
         })
     })
+
+    if (best_games.length > 0) {
+        console.log(`Found ${best_games.length} possible games in ${SEARCH_TIMEOUT}ms`)
+        best = best_games.sort((game1, game2) => {
+            let game1_weight = game1.game.reduce((total, matchup) => total + matchup.weight, 0)
+            let game2_weight = game2.game.reduce((total, matchup) => total + matchup.weight, 0)
+
+            return game2_weight - game1_weight
+        })[0]
+    }
+
+    //Random chance to swap BLUE and RED side
+    if (Math.random() < 0.5) {
+        best.expected_outcome = 1 - best.expected_outcome
+        best.game = best.game.map(matchup => {
+            return {player1: matchup.player2, player2: matchup.player1, probability: 1 - matchup.probability}
+        })
+    }
 
     return best
 }
