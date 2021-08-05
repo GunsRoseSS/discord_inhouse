@@ -559,44 +559,36 @@ client.on("message", async (message) => {
             case 'commands':
                 message.react('❓');
 
-                embed = new EasyEmbedPages(message.channel, {
-                    color: 'ffffff',
-                    allowStop: true,
-                    time: 300000,
-                    ratelimit: 1500,
+                createEmbed({
+                    colour: '#ffffff',
                     pages: [
                         {
-                            title: ':question: Pre-game commands :question;',
+                            title: ':question: Pre-game commands :question:',
                             description: convertHelpToEmbed(1)
                         },
                         {
-                            title: ':question: Post-game commands :question;',
+                            title: ':question: Post-game commands :question:',
                             description: convertHelpToEmbed(2)
                         },
                         {
-                            title: ':question: Statistical commands part 1 :question;',
+                            title: ':question: Statistical commands part 1 :question:',
                             description: convertHelpToEmbed(3)
                         },
                         {
-                            title: ':question: Statistical commands part 2 :question;',
+                            title: ':question: Statistical commands part 2 :question:',
                             description: convertHelpToEmbed(4)
                         },
                         {
-                            title: ':question: Match history related commands :question;',
+                            title: ':question: Match history related commands :question:',
                             description: convertHelpToEmbed(5)
                         },
                         {
-                            title: ':question: Misc. :question;',
+                            title: ':question: Misc. :question:',
                             description: convertHelpToEmbed(6)
                         },
                     ]
-                })
+                }).send(message.channel, message.author.id)
 
-
-                embed.start({
-                    channel: message.channel,
-                    author: message.author
-                })
                 break
             case 'changeimg':
                 message.react('🐶');

@@ -63,9 +63,9 @@ const postGame = [
         description: 'Use this command after a match to indicate that your team has win the match. 6 votes are necessary to confirm the win.'
     },
     {
-        name: '!link [gameID]',
+        name: '!link [gameID] [riotID]',
         aliases: '!matchid',
-        description: 'Links the matchID that is displayed in the LoL client to the last game that was played.'
+        description: 'Links a game to its riot match id.'
     }
 ]
 
@@ -81,9 +81,9 @@ const stats1 = [
         description: 'Displays champion stats for the requested [champion] for yourself, another [@player], or [all] players'
     },
     {
-        name: '!meta ?[mmr/pickrate] ?[low/high]',
+        name: '!meta',
         aliases: '!champstats',
-        description: "Displays the current meta for the played champions. The default sorting is by mmr from high to low, but you can change this with the [mmr/pickrate] and [low/high] arguments."
+        description: "Displays the current meta for the played champions."
     }
 
 ]
