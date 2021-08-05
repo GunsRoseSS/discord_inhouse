@@ -730,53 +730,187 @@ export const getPlayerStatsEmbed = (playerID, userList, stats) => {
 }
 
 export const getHallOfFameStats = async (userList, champion) => {
-    let users = await User.find();
-    let stats = {}
+    let statList = ['kills', 'deaths', 'assists', 'cs', 'gold', 'spree', 'champ_dmg_total', 'objective_dmg', 'turret_dmg', 'healed_dmg', 'taken_dmg_total', 'wards_placed', 'control_wards'];
+    let games = await getAllGames();
+    let fullStats = {};
+    let stats = {};
     let title;
 
-    for (let user of users) {
-        let userStats;
-        if (!champion) {
-            userStats = await getPlayerStats(user._id);
-            title = `:hushed: Hall of Fame: The best player of each statistic! :hushed:`;
-        } else {
-            userStats = await getPlayerChampionDatav2(user._id);
-            if (!userStats || userStats.length === 0) {
-                continue
-            }
-            userStats = userStats[champion];
-            if (!userStats){
-                continue
-            }
-            title = `:hushed: Hall of Fame: The best player of each statistic for ${getChampionName(champion)}! :hushed:`;
+    if (champion) {
+        title = `:hushed: Hall of Fame: The best player of each statistic of ${getChampionName(champion)}! :hushed:`;
+    } else {
+        title = `:hushed: Hall of Fame: The best player of each statistic! :hushed:`;
+    }
+
+    for (let game of games) {
+        let statsEntered = false;
+        if (game.bans.length > 0) {
+            statsEntered = true;
         }
-        if (Object.entries(stats).length !== 0) {
-            Object.entries(userStats).forEach(([key, value]) => {
-                if (key !== 'divideBy' && key !== 'avg_kills' && key !== 'avg_deaths' && key !== 'avg_assists' && key !== 'best_kda' && key !== 'avg_kda') {
-                    if (value > stats[key].stat) {
-                        stats[key] = {
-                            id: user._id,
+
+        let totalKills = {
+            RED: 0,
+            BLUE: 0
+        };
+        let totalDmg = {
+            RED: 0,
+            BLUE: 0
+        };
+
+        if (statsEntered) {
+            for (let user of game.players) {
+                totalKills[user.team] += parseInt(user.stats.kills);
+                totalDmg[user.team] += user.stats.champ_dmg_total;
+            }
+        }
+
+        for (let user of game.players) {
+            if (champion) {
+                if (user.champion !== champion) {
+                    continue
+                }
+            }
+            if (!stats[user.id]) {
+                stats[user.id] = {};
+            }
+
+            let win = game.winner === user.team;
+
+            if (Object.keys(stats[user.id]).length > 3) {
+                stats[user.id].wins += win ? 1 : 0;
+                stats[user.id].losses += win ? 0 : 1;
+                stats[user.id].gained += ordinal(user.afterGameElo) - ordinal(user.previousElo);
+                if (statsEntered) {
+                    for (let stat of statList) {
+                        if (user.stats[`${stat}`] !== '-') {
+                            stats[user.id][`avg_${stat}`] += parseInt(user.stats[`${stat}`]);
+                            if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
+                                if (stats[user.id][`best_${stat}`].int < parseInt(user.stats[`${stat}`])) {
+                                    stats[user.id][`best_${stat}`].int = parseInt(user.stats[`${stat}`]);
+                                    stats[user.id][`best_${stat}`].champion = user.champion;
+                                }
+                            }
+                        }
+                    }
+                    stats[user.id].first += user.stats.first ? 1 : 0;
+                    if (stats[user.id][`best_multi`].int < parseInt(user.stats.multi)) {
+                        stats[user.id][`best_multi`].int = parseInt(user.stats.multi);
+                        stats[user.id][`best_multi`].champion = user.champion;
+                    }
+                    stats[user.id].divideBy += 1;
+                    if (stats[user.id].best_kp.int < Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10) {
+                        stats[user.id].best_kp.int = Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10;
+                        stats[user.id].best_kp.champion = user.champion;
+                    }
+                    stats[user.id].avg_kp += Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10;
+                    if (stats[user.id].best_dmgshare.int < Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10) {
+                        stats[user.id].best_dmgshare.int = Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10;
+                        stats[user.id].best_dmgshare.champion = user.champion;
+                    }
+                    stats[user.id].avg_dmgshare += Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10;
+
+                    if (stats[user.id].best_kda.calc < Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100) {
+                        stats[user.id].best_kda = {
+                            calc: Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100,
+                            kills: (parseInt(user.stats.kills)),
+                            deaths: (parseInt(user.stats.deaths)),
+                            assists: (parseInt(user.stats.assists)),
+                            champion: user.champion
+                        }
+                    }
+                }
+            } else {
+                stats[user.id] = {
+                    wins: win ? 1 : 0,
+                    losses: win ? 0 : 1,
+                    gained: ordinal(user.afterGameElo) - ordinal(user.previousElo)
+                };
+                if (statsEntered) {
+                    for (let stat of statList) {
+                        stats[user.id][`best_${stat}`] = {
+                            int: parseInt(user.stats[`${stat}`]),
+                            champion: user.champion
+                        };
+                        stats[user.id][`avg_${stat}`] = parseInt(user.stats[`${stat}`]);
+                    }
+                    stats[user.id].first = user.stats.first ? 1 : 0;
+                    stats[user.id][`best_multi`] = {
+                        int: user.stats.multi,
+                        champion: user.champion
+                    };
+                    stats[user.id].divideBy = 1;
+                    stats[user.id].avg_kp = Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10;
+                    stats[user.id].best_kp = {
+                        int: Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10,
+                        champion: user.champion
+                    };
+                    stats[user.id].avg_dmgshare = Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10;
+                    stats[user.id].best_dmgshare = {
+                        int: Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10,
+                        champion: user.champion
+                    };
+                    stats[user.id].best_kda = {
+                        calc: Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100,
+                        kills: (parseInt(user.stats.kills)),
+                        deaths: (parseInt(user.stats.deaths)),
+                        assists: (parseInt(user.stats.assists)),
+                        champion: user.champion
+                    }
+                }
+            }
+        }
+    }
+
+    Object.keys(stats).forEach(player => {
+        for (let stat of statList) {
+            if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
+                stats[player][`avg_${stat}`] = Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10; //provides one decimal, useful for lower number stats
+            } else {
+                stats[player][`avg_${stat}`] = Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy);
+            }
+        }
+        stats[player].first = Math.round(stats[player].first / stats[player].divideBy * 1000) / 10;
+        stats[player].avg_kp = Math.round(stats[player].avg_kp / stats[player].divideBy * 10) / 10;
+        stats[player].avg_dmgshare = Math.round(stats[player].avg_dmgshare / stats[player].divideBy * 10) / 10;
+        stats[player].avg_kda = Math.round((stats[player].avg_kills + stats[player].avg_assists) / stats[player].avg_deaths * 100) / 100;
+    })
+
+    Object.keys(stats).forEach(player => {
+        if (Object.entries(fullStats).length !== 0) {
+            Object.entries(stats[player]).forEach(([key, value]) => { //initialize string if its empty
+                if (key !== 'divideBy' && key !== 'avg_kills' && key !== 'avg_deaths' && key !== 'avg_assists' && key !== 'best_kda' && key !== 'avg_kda' && !key.startsWith('best')) {
+                    if (value > fullStats[key].stat) {
+                        fullStats[key] = {
+                            id: player,
+                            stat: value
+                        }
+                    }
+                }
+                if (key.startsWith('best') && key !== 'best_kda') {
+                    if (value.int > fullStats[key].stat.int) {
+                        fullStats[key] = {
+                            id: player,
                             stat: value
                         }
                     }
                 }
                 if (key === 'avg_kda') {
-                    if (value > stats.avg_kda.stat.calc) {
-                        stats.avg_kda = {
-                            id: user._id,
+                    if (value > fullStats.avg_kda.stat.calc) {
+                        fullStats.avg_kda = {
+                            id: player,
                             stat: {
                                 calc: value,
-                                kills: userStats.avg_kills,
-                                deaths: userStats.avg_deaths,
-                                assists: userStats.avg_assists
+                                kills: stats[player].avg_kills,
+                                deaths: stats[player].avg_deaths,
+                                assists: stats[player].avg_assists
                             }
                         }
                     }
                 }
                 if (key === 'best_kda') {
-                    if (value.calc > stats.best_kda.stat.calc) {
-                        stats.best_kda = {
-                            id: user._id,
+                    if (value.calc > fullStats.best_kda.stat.calc) {
+                        fullStats.best_kda = {
+                            id: player,
                             stat: {
                                 calc: value.calc,
                                 kills: value.kills,
@@ -788,27 +922,28 @@ export const getHallOfFameStats = async (userList, champion) => {
                 }
             })
         } else {
-            Object.entries(userStats).forEach(([key, value]) => { //initialize string if its empty
+            Object.entries(stats[player]).forEach(([key, value]) => { //initialize string if its empty
                 if (key !== 'divideBy' && key !== 'avg_kills' && key !== 'avg_deaths' && key !== 'avg_assists' && key !== 'avg_kda') {
-                    stats[key] = {
-                        id: user._id,
+                    fullStats[key] = {
+                        id: player,
                         stat: value
                     }
                 }
-                if (key === 'avg_kda' && key !== 'best_kda') {
-                    stats.avg_kda = {
-                        id: user._id,
+                if (key === 'avg_kda') {
+                    fullStats.avg_kda = {
+                        id: player,
                         stat: {
                             calc: value,
-                            kills: userStats.avg_kills,
-                            deaths: userStats.avg_deaths,
-                            assists: userStats.avg_assists
+                            kills: stats[player].avg_kills,
+                            deaths: stats[player].avg_deaths,
+                            assists: stats[player].avg_assists
                         }
                     }
                 }
             })
         }
-    }
+
+    })
 
     return {
         title: title,
@@ -818,23 +953,27 @@ export const getHallOfFameStats = async (userList, champion) => {
                 fields: [
                     {
                         name: "Total MMR gain/loss",
-                        value: `:money_with_wings: ${stats.gained.stat > 0 ? "+" : ""}${Math.floor(stats.gained.stat)} :crown: <@${stats.gained.id}>`,
+                        value: `:money_with_wings: ${fullStats.gained.stat > 0 ? "+" : ""}${Math.floor(fullStats.gained.stat)} :crown: <@${fullStats.gained.id}>`,
                         inline: false
                     },
-                    {name: "Win/Loss", value: `:green_heart: ${stats.wins.stat} :crown: <@${stats.wins.id}>\n :broken_heart: ${stats.losses.stat} :crown: <@${stats.losses.id}>`, inline: true},
+                    {
+                        name: "Win/Loss",
+                        value: `:green_heart: ${fullStats.wins.stat} :crown: <@${fullStats.wins.id}>\n :broken_heart: ${fullStats.losses.stat} :crown: <@${fullStats.losses.id}>`,
+                        inline: true
+                    },
                     {
                         name: "Average(Best) K/D/A",
-                        value: `:bar_chart: ${stats.avg_kda.stat.kills}/${stats.avg_kda.stat.deaths}/${stats.avg_kda.stat.assists} [${stats.avg_kda.stat.calc}] :crown: <@${stats.avg_kda.id}> \n:first_place: (${stats.best_kda.stat.kills}/${stats.best_kda.stat.deaths}/${stats.best_kda.stat.assists} [${stats.best_kda.stat.calc}]) :crown: <@${stats.best_kda.id}>`,
+                        value: `:bar_chart: ${fullStats.avg_kda.stat.kills}/${fullStats.avg_kda.stat.deaths}/${fullStats.avg_kda.stat.assists} [${fullStats.avg_kda.stat.calc}] :crown: <@${fullStats.avg_kda.id}> \n:first_place: (${fullStats.best_kda.stat.kills}/${fullStats.best_kda.stat.deaths}/${fullStats.best_kda.stat.assists} [${fullStats.best_kda.stat.calc}]) :crown: <@${fullStats.best_kda.id}>`,
                         inline: false
                     },
                     {
                         name: "Average(Best) Kill participation/Damage share %",
-                        value: `:raised_hands: :bar_chart: ${stats.avg_kp.stat}% :crown: <@${stats.avg_kp.id}>\n :raised_hands: :first_place: (${stats.best_kp.stat}%) :crown: <@${stats.best_kp.id}>\n:boom: :bar_chart: ${stats.avg_dmgshare.stat}% :crown: <@${stats.avg_dmgshare.id}>\n:boom: :first_place: (${stats.best_dmgshare.stat}%) :crown: <@${stats.best_dmgshare.id}>`,
+                        value: `:raised_hands: :bar_chart: ${fullStats.avg_kp.stat}% :crown: <@${fullStats.avg_kp.id}>\n :raised_hands: :first_place: (${fullStats.best_kp.stat.int}%) :crown: <@${fullStats.best_kp.id}> - ${getChampionName(fullStats.best_kp.stat.champion)}\n:boom: :bar_chart: ${fullStats.avg_dmgshare.stat}% :crown: <@${fullStats.avg_dmgshare.id}>\n:boom: :first_place: (${fullStats.best_dmgshare.stat.int}%) :crown: <@${fullStats.best_dmgshare.id}> - ${getChampionName(fullStats.best_dmgshare.stat.champion)}`,
                         inline: false
                     },
                     {
                         name: "Average(Best) CS/Gold earned",
-                        value: `:crossed_swords: :bar_chart: ${stats.avg_cs.stat} :crown: <@${stats.avg_cs.id}>\n :crossed_swords: :first_place: (${stats.best_cs.stat}) :crown: <@${stats.best_cs.id}>\n:coin: :bar_chart: ${stats.avg_gold.stat} :crown: <@${stats.avg_gold.id}>\n :coin: :first_place: (${stats.best_gold.stat}) :crown: <@${stats.best_gold.id}>`,
+                        value: `:crossed_swords: :bar_chart: ${fullStats.avg_cs.stat} :crown: <@${fullStats.avg_cs.id}>\n :crossed_swords: :first_place: (${fullStats.best_cs.stat.int}) :crown: <@${fullStats.best_cs.id}> - ${getChampionName(fullStats.best_cs.stat.champion)}\n:coin: :bar_chart: ${fullStats.avg_gold.stat} :crown: <@${fullStats.avg_gold.id}>\n :coin: :first_place: (${fullStats.best_gold.stat.int}) :crown: <@${fullStats.best_gold.id}> - ${getChampionName(fullStats.best_gold.stat.champion)}`,
                         inline: false
                     }
                 ]
@@ -843,22 +982,22 @@ export const getHallOfFameStats = async (userList, champion) => {
                 fields: [
                     {
                         name: "Average(Best) Damage dealt to champions/ objectives/turrets",
-                        value: `:monkey_face: :bar_chart: ${stats.avg_champ_dmg_total.stat} :crown: <@${stats.avg_champ_dmg_total.id}>\n :monkey_face: :first_place:(${stats.best_champ_dmg_total.stat}) :crown: <@${stats.best_champ_dmg_total.id}>\n:dragon_face: :bar_chart: ${stats.avg_objective_dmg.stat} :crown: <@${stats.avg_objective_dmg.id}>\n :dragon_face: :first_place: (${stats.best_objective_dmg.stat}) :crown: <@${stats.best_objective_dmg.id}>\n:tokyo_tower: :bar_chart: ${stats.avg_turret_dmg.stat} :crown: <@${stats.avg_turret_dmg.id}>\n :tokyo_tower: :first_place: (${stats.best_turret_dmg.stat}) :crown: <@${stats.best_turret_dmg.id}>`,
+                        value: `:monkey_face: :bar_chart: ${fullStats.avg_champ_dmg_total.stat} :crown: <@${fullStats.avg_champ_dmg_total.id}>\n :monkey_face: :first_place:(${fullStats.best_champ_dmg_total.stat.int}) :crown: <@${fullStats.best_champ_dmg_total.id}> - ${getChampionName(fullStats.best_champ_dmg_total.stat.champion)}\n:dragon_face: :bar_chart: ${fullStats.avg_objective_dmg.stat} :crown: <@${fullStats.avg_objective_dmg.id}>\n :dragon_face: :first_place: (${fullStats.best_objective_dmg.stat.int}) :crown: <@${fullStats.best_objective_dmg.id}> - ${getChampionName(fullStats.best_objective_dmg.stat.champion)}\n:tokyo_tower: :bar_chart: ${fullStats.avg_turret_dmg.stat} :crown: <@${fullStats.avg_turret_dmg.id}>\n :tokyo_tower: :first_place: (${fullStats.best_turret_dmg.stat.int}) :crown: <@${fullStats.best_turret_dmg.id}> - ${getChampionName(fullStats.best_turret_dmg.stat.champion)}`,
                         inline: false
                     },
                     {
                         name: "Average(Best) Damage taken/healed",
-                        value: `:shield: :bar_chart: ${stats.avg_taken_dmg_total.stat} :crown: <@${stats.avg_taken_dmg_total.id}>\n :shield: :first_place: (${stats.best_taken_dmg_total.stat}) :crown: <@${stats.best_taken_dmg_total.id}>\n:ambulance: :bar_chart: ${stats.avg_healed_dmg.stat} :crown: <@${stats.avg_healed_dmg.id}>\n :ambulance: :first_place: (${stats.best_healed_dmg.stat}) :crown: <@${stats.best_healed_dmg.id}>`,
+                        value: `:shield: :bar_chart: ${fullStats.avg_taken_dmg_total.stat} :crown: <@${fullStats.avg_taken_dmg_total.id}>\n :shield: :first_place: (${fullStats.best_taken_dmg_total.stat.int}) :crown: <@${fullStats.best_taken_dmg_total.id}> - ${getChampionName(fullStats.best_taken_dmg_total.stat.champion)}\n:ambulance: :bar_chart: ${fullStats.avg_healed_dmg.stat} :crown: <@${fullStats.avg_healed_dmg.id}>\n :ambulance: :first_place: (${fullStats.best_healed_dmg.stat.int}) :crown: <@${fullStats.best_healed_dmg.id}> - ${getChampionName(fullStats.best_healed_dmg.stat.champion)}`,
                         inline: false
                     },
                     {
                         name: "Average(Best) Wards/Control wards placed",
-                        value: champion ? `Unfortunately these stats are not available for specific champions.` : `:flashlight: :bar_chart: ${stats.avg_wards_placed.stat} :crown: <@${stats.avg_wards_placed.id}>\n :flashlight: :first_place: (${stats.best_wards_placed.stat}) :crown: <@${stats.best_wards_placed.id}>\n:eye: :bar_chart: ${stats.avg_control_wards.stat} :crown: <@${stats.avg_control_wards.id}>\n :eye: :first_place: (${stats.best_control_wards.stat}) :crown: <@${stats.best_control_wards.id}>`,
+                        value: champion ? `Unfortunately these stats are not available for specific champions.` : `:flashlight: :bar_chart: ${fullStats.avg_wards_placed.stat} :crown: <@${fullStats.avg_wards_placed.id}>\n :flashlight: :first_place: (${fullStats.best_wards_placed.stat.int}) :crown: <@${fullStats.best_wards_placed.id}> - ${getChampionName(fullStats.best_wards_placed.stat.champion)}\n:eye: :bar_chart: ${fullStats.avg_control_wards.stat} :crown: <@${fullStats.avg_control_wards.id}>\n :eye: :first_place: (${fullStats.best_control_wards.stat.int}) :crown: <@${fullStats.best_control_wards.id}> - ${getChampionName(fullStats.best_control_wards.stat.champion)}`,
                         inline: false
                     },
                     {
                         name: "First Blood %",
-                        value: champion ? `Unfortunately these stats are not available for specific champions.` : `:drop_of_blood: ${stats.first.stat}% :crown: <@${stats.first.id}>`,
+                        value: champion ? `Unfortunately these stats are not available for specific champions.` : `:drop_of_blood: ${fullStats.first.stat}% :crown: <@${fullStats.first.id}>`,
                         inline: false
                     }
                 ]
