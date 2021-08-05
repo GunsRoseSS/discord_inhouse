@@ -23,7 +23,14 @@ import {
     getGameEmbed,
     getMatchHistoryData,
     updateMatchID,
-    getGameByMatchID, getAllGames, getMetaEmbed, getUserGames, getGameStats, insertGameStats, getPlayerStats
+    getGameByMatchID,
+    getAllGames,
+    getMetaEmbed,
+    getUserGames,
+    getGameStats,
+    insertGameStats,
+    getPlayerStats,
+    getHallOfFameStats
 } from "./interface/games.js"
 
 import {convertHelpToEmbed} from "./interface/help.js"
@@ -353,7 +360,7 @@ client.on("message", async (message) => {
                     let success = await updateMatchID(args[0], args[1]);
                     if (success) {
                         message.channel.send(`Match id set for game ${args[0]} -> ${args[1]}, stats will be updated soon.`);
-                        insertGameStats(args[1]).then(resolved => {
+                        await insertGameStats(args[1]).then(resolved => {
                             message.channel.send(`Stats are updated for game ${args[0]} -> ${args[1]}`);
                         })
 
@@ -685,6 +692,7 @@ client.on("message", async (message) => {
                 break
             case 'stats':
             case 'playerstats':
+                message.react('📊');
                 if (args.length > 0) {
                     user_id = args[0].slice(3, args[0].length - 1);
                 } else {
@@ -703,8 +711,22 @@ client.on("message", async (message) => {
                 break
             case 'hof':
             case 'halloffame':
+                message.react('🎖️');
+                let stats;
                 if (args.length === 0){
-
+                    stats = await getHallOfFameStats(userList);
+                } else {
+                    let champion = formatChampions([args[0]]);
+                    if (champion.length === 0){
+                        message.channel.send("My 8 year old son can spell champion names better than you. Yes, I adopted him.")
+                        break
+                    }
+                    stats = await getHallOfFameStats(userList, champion[0])
+                }
+                if (!stats) {
+                    message.channel.send("No stats found for this champion.")
+                } else {
+                    createEmbed(stats).send(message.channel, message.author);
                 }
                 break
             case "uwu":
