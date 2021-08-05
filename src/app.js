@@ -719,6 +719,12 @@ client.on("message", async (message) => {
                     }).send(message.channel, message.author.id)
                 }
                 break
+            case 'hof':
+            case 'halloffame':
+                if (args.length === 0){
+
+                }
+                break
             case "uwu":
                 {
                     message.channel.send("OwO", {files: ["https://cdn.discordapp.com/attachments/287347623139082240/871056038927941653/alex_owo.png"]})

@@ -12,6 +12,7 @@ import {sortMetaData} from "../helpers/sort.js";
 import {createEmbed} from "./embed.js";
 import https from "https";
 import {getMemberNickname} from "../helpers/discord.js";
+import User from "../models/user.js";
 
 export const createGame = async (id, game, champs, winner) => {
     try {
@@ -578,11 +579,13 @@ export const getPlayerStats = async (playerID, userList) => {
             statsEntered = true;
         }
 
-        let totalkills = 0;
+        let totalKills = 0;
+        let totalDmg = 0;
         if (statsEntered) {
             for (let user of game.players) {
                 if (user.team === player.team) {
-                    totalkills += parseInt(user.stats.kills);
+                    totalKills += parseInt(user.stats.kills);
+                    totalDmg += user.stats.champ_dmg_total;
                 }
             }
         }
@@ -593,10 +596,12 @@ export const getPlayerStats = async (playerID, userList) => {
             stats.gained += ordinal(player.afterGameElo) - ordinal(player.previousElo);
             if (statsEntered) {
                 for (let stat of statList) {
-                    if (player.stats[`${stat}`] !== '-'){
+                    if (player.stats[`${stat}`] !== '-') {
                         stats[`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
-                        if (stats[`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
-                            stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                        if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
+                            if (stats[`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
+                                stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                            }
                         }
                     }
                 }
@@ -605,10 +610,27 @@ export const getPlayerStats = async (playerID, userList) => {
                     stats[`best_multi`] = parseInt(player.stats.multi);
                 }
                 stats.divideBy += 1;
-                if (stats.best_kp < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10) {
-                    stats.best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                if (stats.best_kp < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10) {
+                    stats.best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
                 }
-                stats.avg_kp += Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                stats.avg_kp += Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
+                if (stats.best_dmgshare < Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10) {
+                    stats.best_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                }
+                stats.avg_dmgshare += Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                try {
+                    if (stats.best_kda.calc < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100) {
+                        stats.best_kda = {
+                            calc: Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100,
+                            kills: (parseInt(player.stats.kills)),
+                            deaths: (parseInt(player.stats.deaths)),
+                            assists: (parseInt(player.stats.assists))
+                        }
+                    }
+                } catch (e) {
+                    stats.best_kda.calc = 999999999999;
+                }
+
             }
         } else {
             stats = {
@@ -624,8 +646,16 @@ export const getPlayerStats = async (playerID, userList) => {
                 stats.first = player.stats.first ? 1 : 0;
                 stats[`best_multi`] = player.stats.multi;
                 stats.divideBy = 1;
-                stats.avg_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
-                stats.best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                stats.avg_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
+                stats.best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
+                stats.avg_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                stats.best_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                stats.best_kda = {
+                    calc: Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100,
+                    kills: (parseInt(player.stats.kills)),
+                    deaths: (parseInt(player.stats.deaths)),
+                    assists: (parseInt(player.stats.assists))
+                }
             }
         }
     })
@@ -639,7 +669,16 @@ export const getPlayerStats = async (playerID, userList) => {
     }
     stats.first = Math.round(stats.first / stats.divideBy * 1000) / 10;
     stats.avg_kp = Math.round(stats.avg_kp / stats.divideBy * 10) / 10;
+    stats.avg_dmgshare = Math.round(stats.avg_dmgshare / stats.divideBy * 10) / 10;
+    stats.avg_kda = Math.round((stats.avg_kills + stats.avg_assists) / stats.avg_deaths * 100) / 100;
 
+    return getPlayerStatsEmbed(playerID, userList, stats)
+}
+
+export const getPlayerStatsEmbed = (playerID, userList, stats) => {
+    if (stats.best_kda.calc > 9000) {
+        stats.best_kda.calc = "Perfect";
+    }
     return {
         title: `:chart_with_upwards_trend: Statistics for ${getMemberNickname(playerID, userList)} :chart_with_upwards_trend:`,
         description: "Type **!hof** or **!hof [champion]** to see the top scores for all/a single champion.",
@@ -652,12 +691,12 @@ export const getPlayerStats = async (playerID, userList) => {
             {name: "Win/Loss", value: `${stats.wins}/${stats.losses}`, inline: true},
             {
                 name: "Average(Best) K/D/A",
-                value: `${stats.avg_kills}/${stats.avg_deaths}/${stats.avg_assists} (${stats.best_kills})/(${stats.best_deaths})/(${stats.best_assists})`,
+                value: `${stats.avg_kills}/${stats.avg_deaths}/${stats.avg_assists} [${stats.avg_kda}] \n(${stats.best_kda.kills}/${stats.best_kda.deaths}/${stats.best_kda.assists} [${stats.best_kda.calc}])`,
                 inline: true
             },
             {
-                name: "Average(Best) Kill participation %",
-                value: `:raised_hands: ${stats.avg_kp}%(${stats.best_kp}%)`,
+                name: "Average(Best) Kill participation/Damage share %",
+                value: `:raised_hands: ${stats.avg_kp}%(${stats.best_kp}%)/\n:boom:${stats.avg_dmgshare}%(${stats.best_dmgshare}%)`,
                 inline: true
             },
             {
@@ -687,6 +726,21 @@ export const getPlayerStats = async (playerID, userList) => {
             },
         ], footer: ""
     }
+}
 
+export const getHallOfFameStats = async (userList, champion) => {
+    let users = await User.find();
+    let stats = {}
 
+    for (let user of users) {
+        let userStats;
+        if (!champion) {
+            userStats = await getPlayerStats();
+        } else {
+
+        }
+        if (Object.entries(stats).length === 0) {
+        }
+
+    }
 }

@@ -161,7 +161,8 @@ const createGraph = async (title, labels, legend, data) => {
     const textColour = "#ffffff"
 
     //F6BD60 = Maximum yellow red
-    //ffff56 = yellow
+    //faed00 = yellow
+    //e5fa00 = ogre
     
     //ff6456 = orange/red
     //A02D23 = Cinnabar (orange-red)
@@ -173,20 +174,25 @@ const createGraph = async (title, labels, legend, data) => {
 
     //802392 = dark magenta
     //966BA0 = light purple
+    //fa0089 = pink
+    //ffdede = lightish pink
 
     //00ff00 = green
     //6bd425 = lime green
     //2B600E = apple green
+    //00faa2 = turquoise
 
     //c8c8c8 = light gray
+    //4d150a = brown
+    //fffcfc = nearly white
 
     //Randomly sort each colour array
-    let yellows = ["#f6bd60", "#ffff56"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let yellows = ["#f6bd60", "#faed00", "#e5fa00"].sort(() => (Math.random() > .5) ? 1 : -1)
     let reds = ["#ff6456", "#a02d23", "#d90429"].sort(() => (Math.random() > .5) ? 1 : -1)
     let blues = ["#00ffff", "#437c90", "#08498E"].sort(() => (Math.random() > .5) ? 1 : -1)
-    let purples = ["#802392", "#966BA0"].sort(() => (Math.random() > .5) ? 1 : -1)
-    let greens = ["#00ff00", "#6bd425", "#2b600e"].sort(() => (Math.random() > .5) ? 1 : -1)
-    let greys = ["#c8c8c8", "#484848"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let purples = ["#802392", "#966BA0", "#fa0089", "#ffdede"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let greens = ["#00ff00", "#6bd425", "#2b600e", "#00faa2"].sort(() => (Math.random() > .5) ? 1 : -1)
+    let greys = ["#c8c8c8", "#484848", "#4d150a", "#fffcfc"].sort(() => (Math.random() > .5) ? 1 : -1)
 
     let count = yellows.length + reds.length + blues.length + purples.length + greens.length + greys.length
 
