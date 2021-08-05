@@ -36,11 +36,13 @@ export const getPlayerChampionDatav2 = async (id) => {
             statsEntered = true;
         }
 
-        let totalkills = 0;
+        let totalKills = 0;
+        let totalDmg = 0;
         if (statsEntered) {
             for (let user of game.players) {
                 if (user.team === player.team) {
-                    totalkills += parseInt(user.stats.kills);
+                    totalKills += parseInt(user.stats.kills);
+                    totalDmg += user.stats.champ_dmg_total;
                 }
             }
         }
@@ -52,18 +54,36 @@ export const getPlayerChampionDatav2 = async (id) => {
             if (statsEntered) {
                 for (let stat of statList) {
                     champions[player.champion][`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
-                    if (champions[player.champion][`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
-                        champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
+                        if (champions[player.champion][`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
+                            champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                        }
                     }
                 }
                 if (champions[player.champion][`best_multi`] < parseInt(player.stats.multi)) {
                     champions[player.champion][`best_multi`] = parseInt(player.stats.multi);
                 }
                 champions[player.champion].divideBy += 1;
-                if (champions[player.champion].best_kp < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10) {
-                    champions[player.champion].best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                if (champions[player.champion].best_kp < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10) {
+                    champions[player.champion].best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
                 }
-                champions[player.champion].avg_kp += Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                champions[player.champion].avg_kp += Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
+                if (champions[player.champion].best_dmgshare < Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10) {
+                    champions[player.champion].best_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                }
+                champions[player.champion].avg_dmgshare += Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                try {
+                    if (champions[player.champion].best_kda.calc < Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100) {
+                        champions[player.champion].best_kda = {
+                            calc: Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100,
+                            kills: (parseInt(player.stats.kills)),
+                            deaths: (parseInt(player.stats.deaths)),
+                            assists: (parseInt(player.stats.assists))
+                        }
+                    }
+                } catch (e) {
+                    champions[player.champion].best_kda.calc = 999999999999;
+                }
             }
         } else {
             champions[player.champion] = {wins: win ? 1 : 0, losses: win ? 0 : 1, gained: ordinal(player.afterGameElo) - ordinal(player.previousElo)};
@@ -74,8 +94,16 @@ export const getPlayerChampionDatav2 = async (id) => {
                 }
                 champions[player.champion][`best_multi`] = player.stats.multi;
                 champions[player.champion].divideBy = 1;
-                champions[player.champion].avg_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
-                champions[player.champion].best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalkills * 1000) / 10;
+                champions[player.champion].avg_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
+                champions[player.champion].best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
+                champions[player.champion].avg_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                champions[player.champion].best_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+                champions[player.champion].best_kda = {
+                    calc: Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100,
+                    kills: (parseInt(player.stats.kills)),
+                    deaths: (parseInt(player.stats.deaths)),
+                    assists: (parseInt(player.stats.assists))
+                }
             }
         }
     })
@@ -89,6 +117,8 @@ export const getPlayerChampionDatav2 = async (id) => {
             }
         }
         champ.avg_kp = Math.round(champ.avg_kp / champ.divideBy * 10) / 10;
+        champ.avg_dmgshare = Math.round(champ.avg_dmgshare / champ.divideBy * 10) / 10;
+        champ.avg_kda = Math.round((champ.avg_kills + champ.avg_assists) / champ.avg_deaths * 100) / 100;
     })
 
     return champions
@@ -334,6 +364,9 @@ export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
     if (champion.length > 0) {
         champion = champion[0];
         if (champion in champs) {
+            if (champs[champion].best_kda.calc > 9000) {
+                champs[champion].best_kda.calc = "Perfect";
+            }
             return {
                 title: `${getChampionName(champion)} stats for ${getMemberNickname(id, userList)}`,
                 description: "Type **!champion [champion] all** to view stats of all players for that champion or **!champion [champion] [@player]** to view stats of that player for the champion.",
@@ -341,8 +374,8 @@ export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
                 fields: [
                     {name: "Total MMR gain/loss", value: `${champs[champion].gained > 0 ? "+" : ""}${Math.floor(champs[champion].gained)}`, inline: true},
                     {name: "Win/Loss", value: `${champs[champion].wins}/${champs[champion].losses}`, inline: true},
-                    {name: "Average(Best) K/D/A", value: `${champs[champion].avg_kills}/${champs[champion].avg_deaths}/${champs[champion].avg_assists} (${champs[champion].best_kills})/(${champs[champion].best_deaths})/(${champs[champion].best_assists})`, inline: true},
-                    {name: "Average(Best) Kill participation %", value: `:raised_hands: ${champs[champion].avg_kp}%(${champs[champion].best_kp}%)`, inline: true},
+                    {name: "Average(Best) K/D/A", value: `${champs[champion].avg_kills}/${champs[champion].avg_deaths}/${champs[champion].avg_assists} [${champs[champion].avg_kda}] \n(${champs[champion].best_kda.kills}/${champs[champion].best_kda.deaths}/${champs[champion].best_kda.assists} [${champs[champion].best_kda.calc}])`, inline: true},
+                    {name: "Average(Best) Kill participation %", value: `:raised_hands: ${champs[champion].avg_kp}%(${champs[champion].best_kp}%)/\n:boom: ${champs[champion].avg_dmgshare}%(${champs[champion].best_dmgshare}%)`, inline: true},
                     {name: "Average(Best) CS/Gold earned", value: `:crossed_swords: ${champs[champion].avg_cs}(${champs[champion].best_cs})/\n:coin: ${champs[champion].avg_gold}(${champs[champion].best_gold})`, inline: true},
                     {name: "Average(Best) Damage dealt to champions/ objectives/turrets", value: `:monkey_face: ${champs[champion].avg_champ_dmg_total}(${champs[champion].best_champ_dmg_total})/\n:dragon_face: ${champs[champion].avg_objective_dmg}(${champs[champion].best_objective_dmg})/\n:tokyo_tower: ${champs[champion].avg_turret_dmg}(${champs[champion].best_turret_dmg})`, inline: true},
                     {name: "Average(Best) Damage taken/healed", value: `:shield: ${champs[champion].avg_taken_dmg_total}(${champs[champion].best_taken_dmg_total})/\n:ambulance: ${champs[champion].avg_healed_dmg}(${champs[champion].best_healed_dmg})`, inline: true},
