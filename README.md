@@ -62,7 +62,7 @@ This bot uses the following npm packages:
 
 !graph //Shows a graph of the users rating in each role over time
 ```
-##Limitations
+## Limitations
 This discord inhouse bot was made for small communities. This means that the bot knows few limitations:
 
 * Only one game can be played at the same time.
