@@ -61,7 +61,7 @@ export const convertTeammateDataToEmbed = async (teammateData) => {
             mmrGainLoss: []
         }
         let counter = 0;
-        while (teammateData.length !== 0 && counter < 10) {
+        while (teammateData.length !== 0 && counter < parseInt(process.env.EMBED_PAGE_LENGTH)) {
             let embedNumber = loopCounter * 10 + counter + 1
             subList.names.push(emojiNumberSelector(embedNumber) + ': ' + teammateData[0].id + ': ' + emojiGainedSelector(teammateData[0].mmr));
             subList.winLoss.push(teammateData[0].wins + "/" + teammateData[0].losses);
@@ -118,8 +118,8 @@ export const convertOpponentDataToEmbed = async (opponentData) => {
             mmrGainLoss: []
         }
         let counter = 0;
-        while (opponentData.length !== 0 && counter < 10) {
-            let embedNumber = loopCounter * 10 + counter + 1
+        while (opponentData.length !== 0 && counter < parseInt(process.env.EMBED_PAGE_LENGTH)) {
+            let embedNumber = loopCounter * parseInt(process.env.EMBED_PAGE_LENGTH) + counter + 1
             subList.names.push(emojiNumberSelector(embedNumber) + ': ' + opponentData[0].id + ': ' + emojiOpponentGainedSelector(opponentData[0].mmr));
             subList.winLoss.push(opponentData[0].wins + "/" + opponentData[0].losses);
             subList.mmrGainLoss.push(checkPositive(opponentData[0].mmr));

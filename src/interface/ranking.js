@@ -119,7 +119,7 @@ export const getUserRankEmbed = async (id, nickname) => {
 
 //creates the embed for !ranking [role]
 export const getRoleRankEmbed = async (role) => {
-    const PAGE_SIZE = 10
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
 
     let roleRanking = await getRoleRanking(role)
 
@@ -166,7 +166,7 @@ export const getRoleRankEmbed = async (role) => {
 
 //creates the embed for !ranking
 export const getAllRankingEmbed = async () => {
-    const PAGE_SIZE = 10
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
 
     let users = await getRanking()
 
@@ -245,7 +245,7 @@ export const getAverageRankingData = async () => {
     embedData = quickSortPlayers(embedData, 'average');
 
     let pages = [];
-    const PAGE_SIZE = 10;
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
     let player_msg = "";
     let average_msg = "";
     let best_msg = "";

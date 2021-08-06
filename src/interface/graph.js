@@ -13,7 +13,7 @@ import { ordinal } from "openskill"
  * @param {Number} count Amount of games to include in graph
  * @returns {String} The name of the file the graph has been saved to
  */
-export const generateRoleGraph = async (role, userList, count = 30) => {
+export const generateRoleGraph = async (role, userList, count = parseInt(process.env.GRAPH_GAMES_AMOUNT)) => {
     let games = await Game.find();
 
     if (!games){

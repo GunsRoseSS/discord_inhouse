@@ -289,8 +289,8 @@ export const paginateHistoryEmbed = (historyData, links) => {
         }
         let counter = 0;
         //check if the page is full or the match array is empty
-        while (historyData.matches.length !== 0 && counter < 5) {
-            let embedNumber = loopCounter * 5 + counter + 1
+        while (historyData.matches.length !== 0 && counter < (parseInt(process.env.EMBED_PAGE_LENGTH) / 2)) {
+            let embedNumber = loopCounter * (parseInt(process.env.EMBED_PAGE_LENGTH) / 2) + counter + 1
             //push stuff into subarray that will become a page
             subList.matches.push(emojiNumberSelector(embedNumber) + ': ' + historyData.matches[0]);
             subList.dates.push(historyData.dates[0]);
@@ -427,7 +427,7 @@ export const getMetaEmbed = (games, type) => {
     dictChamps = sortMetaData(dictChamps, type); //sort
 
     let pages = [];
-    const PAGE_SIZE = 10;
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
     let pickRate_msg = "";
     let champ_msg = "";
     let mmr_msg = "";

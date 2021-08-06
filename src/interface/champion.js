@@ -197,7 +197,7 @@ export const getAllPlayerChampionEmbed = async (champion) => {
 
     let pages = []
 
-    const PAGE_SIZE = 10
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
 
     let player_msg = ""
     let mmr_msg = ""
@@ -264,7 +264,7 @@ export const getAllChampionsEmbed = async () => {
 
     let pages = []
 
-    const PAGE_SIZE = 10
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
 
     let player_msg = ""
     let champ_msg = ""
@@ -318,7 +318,7 @@ export const getAllChampionsEmbed = async () => {
 export const getPlayerChampionsEmbed = async (id, userList) => {
     let pages = []
 
-    const PAGE_SIZE = 10
+    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
 
     let champ_msg = ""
     let mmr_msg = ""
