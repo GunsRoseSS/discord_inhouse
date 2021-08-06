@@ -6,6 +6,13 @@ import { getUserMatchHistory } from "./user.js"
 
 import { ordinal } from "openskill"
 
+/**
+ * @description Creates a graph of mmr variation for users in a role
+ * @param {String} role Name of the role 
+ * @param {[String]} userList List of guild users
+ * @param {Number} count Amount of games to include in graph
+ * @returns {String} The name of the file the graph has been saved to
+ */
 export const generateRoleGraph = async (role, userList, count = 30) => {
     let games = await Game.find();
 
@@ -42,12 +49,13 @@ export const generateRoleGraph = async (role, userList, count = 30) => {
 
     let users = []
 
-
+    //Create an array of users, containing each users nickname
     for (let i=0;i<Object.keys(games).length;i++) {
         let user = Object.keys(games)[i]
         users.push(userList[user])
     }
 
+    //Fills in missing data for players e.g. User 1 plays games 1,2,3 but there have been 5 games, we need to generate data for games 4 and 5
     games = Object.keys(games).reduce((out, key, i) => {
         out.labels.push(users[i])
         let j = 0
@@ -72,6 +80,13 @@ export const generateRoleGraph = async (role, userList, count = 30) => {
     return createGraph(`MMR variation for ${roles_full[roles.indexOf(role)]} (Last ${count} games)`, Array.from(Array(num_games+1).keys()), games.labels, games.data)
 }
 
+/**
+ * @description Creates a graph for a specific user
+ * @param {String} id The id of the user
+ * @param {String} nickname The display name of the user
+ * @param {Number} count The number of games to display
+ * @returns {String} The file name of the generated graph
+ */
 export const generateGraph = async (id, nickname, count = 30) => {
     let data = await getUserGraphData(id)
 
@@ -156,6 +171,14 @@ export const getUserGraphData = async (id, count) => {
 
 }
 
+/**
+ * @description Creates the actual graph, using the data provided
+ * @param {String} title Graph Title
+ * @param {[String]} labels X axis labels
+ * @param {[String]} legend Name for each line in the graph
+ * @param data The graph data
+ * @returns {String} The file name of the graph
+ */
 const createGraph = async (title, labels, legend, data) => {
     const textColour = "#ffffff"
 

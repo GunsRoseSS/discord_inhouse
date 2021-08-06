@@ -15,13 +15,14 @@ export const fetchChampionIcon = (champion) => {
 }
 
 //fetches champion data for a specific player.
-export const getPlayerChampionDatav2 = async (id) => {
+const getPlayerChampionData = async (id) => {
     let history = await getUserMatchHistory(id);
 
     if (!history || history.length === 0) {
         return null
     }
 
+    //Fetch the users games using their history
     let games = await Game.find({$or: history.map(match => match = {_id: match})})
 
     let champions = {}
@@ -127,8 +128,11 @@ export const getPlayerChampionDatav2 = async (id) => {
     return champions
 }
 
-//fetches data for all champions and all players.
-const getAllChampionsDatav2 = async () => {
+/**
+ * @description Fetches data for all champions and all players.
+ * @returns Object {user_id -> {gained, wins, losses}}
+ */
+const getAllChampionsData = async () => {
     let games = await Game.find()
 
     let players = {}
@@ -158,9 +162,12 @@ const getAllChampionsDatav2 = async () => {
     return players
 }
 
-//creates an embed for the fetched data from getAllChampionsDatav2, but only for one champion (for all players)
-export const getAllPlayerChampionEmbedv2 = async (champion) => {
-    let data = await getAllChampionsDatav2()
+/**
+ * @description creates an embed for the data for one champion (for all players)
+ * @param {String} champion Champion name (not formatted)
+ */
+export const getAllPlayerChampionEmbed = async (champion) => {
+    let data = await getAllChampionsData()
 
     champion = formatChampions([champion])
 
@@ -170,6 +177,8 @@ export const getAllPlayerChampionEmbedv2 = async (champion) => {
         return null
     }
 
+    //Filters the data to only include the specified champion
+    //Sorts by mmr gained
     data = Object.keys(data).reduce((out, player) => {
         for (let champ of Object.keys(data[player])) {
             if (champ == champion) {
@@ -194,6 +203,7 @@ export const getAllPlayerChampionEmbedv2 = async (champion) => {
     let mmr_msg = ""
     let win_msg = ""
 
+    //Adds the data to the embed
     data.forEach((player, index) => {
         player_msg += `${emojiNumberSelector(index + 1)} : <@${player.id}> \n`
         mmr_msg += `${player.gained > 0 ? "+" : ""}${Math.floor(player.gained)} \n`
@@ -235,8 +245,8 @@ export const getAllPlayerChampionEmbedv2 = async (champion) => {
 }
 
 //same as above function but for one player it fetches all champions
-export const getAllChampionsEmbedv2 = async () => {
-    let data = await getAllChampionsDatav2()
+export const getAllChampionsEmbed = async () => {
+    let data = await getAllChampionsData()
 
     data = Object.keys(data).reduce((out, player) => {
         for (let champ of Object.keys(data[player])) {
@@ -260,6 +270,7 @@ export const getAllChampionsEmbedv2 = async () => {
     let champ_msg = ""
     let mmr_msg = ""
 
+    //Take each entry and put the data into the embed
     data.forEach((champ, index) => {
         player_msg += `${emojiNumberSelector(index + 1)} : <@${champ.id}> \n`
         champ_msg += `${getChampionName(champ.name)} \n`
@@ -299,8 +310,12 @@ export const getAllChampionsEmbedv2 = async () => {
     }
 }
 
-//ok yeah idk kiwi made this
-export const getPlayerChampionsEmbedv2 = async (id, userList) => {
+/**
+ * 
+ * @param {String} id Discord id of the user
+ * @param {[String]} userList List of members in the guild, used to get their nickname
+ */
+export const getPlayerChampionsEmbed = async (id, userList) => {
     let pages = []
 
     const PAGE_SIZE = 10
@@ -309,7 +324,7 @@ export const getPlayerChampionsEmbedv2 = async (id, userList) => {
     let mmr_msg = ""
     let wins_msg = ""
 
-    let champData = await getPlayerChampionDatav2(id)
+    let champData = await getPlayerChampionData(id)
 
     if (champData == null) {
         return null
@@ -320,6 +335,8 @@ export const getPlayerChampionsEmbedv2 = async (id, userList) => {
         description: "Type **!champions [@player]** to view another player's champion stats"
     }
 
+    //Sort the champions by mmr gained
+    //Changes Object from map of champion -> {gained, wins, losses} to Array of [champion, gained, wins, losses]
     champData = Object.keys(champData).sort((champ1, champ2) => {
         if (champData[champ1].gained > champData[champ2].gained) {
             return -1
@@ -336,6 +353,7 @@ export const getPlayerChampionsEmbedv2 = async (id, userList) => {
         }
     })
 
+    //Take each entry and put the data into the embed
     champData.forEach((champion, index) => {
         champ_msg += `${getChampionName(champion.name)} \n`
         mmr_msg += `${champion.gained > 0 ? "+" : ""}${Math.floor(champion.gained)} \n`
@@ -375,8 +393,8 @@ export const getPlayerChampionsEmbedv2 = async (id, userList) => {
 }
 
 //whatever man, if someone doesnt understand just contact me
-export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
-    let champs = await getPlayerChampionDatav2(id);
+export const getPlayerChampionEmbed = async (id, champion, userList) => {
+    let champs = await getPlayerChampionData(id);
 
     if (champs == null) {
         return null

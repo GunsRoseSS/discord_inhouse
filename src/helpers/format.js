@@ -1,4 +1,9 @@
-//this allows for some flexibility when inputting roles.
+
+/**
+ * @description Formats a set of roles. Provides aliases, allowing for some flexibility when inputting role names
+ * @param {[String]} roles An array of potential role names
+ * @returns {[String]} Array of all valid role names
+ */
 export const formatRoles = (roles) => {
 	return roles.reduce((out, role) => {
 		switch (role) {
@@ -231,12 +236,6 @@ export const formatChampions = (champions) => {
 				case "Noct":
 					temp = ("Nocturne")
 					break
-				case "Jacob":
-					temp = ("Nunu")
-					break
-				case "Richard":
-					temp = ("Corki")
-					break
 				case "Ori":
 				case "Oriana":
 					temp = ("Orianna")
@@ -291,9 +290,6 @@ export const formatChampions = (champions) => {
 				case "Yummi":
 				case "Yumi":
 					temp = ("Yuumi")
-					break
-				case "Black1":
-					temp = ("Ekko")
 					break
 				case "Ruinedboy":
 				case "Isolde":

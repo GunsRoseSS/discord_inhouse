@@ -1,19 +1,17 @@
 import {playersInRole} from "./queue.js"
 import {getMatchups} from "./matchup.js"
 
-//If a game is found within these thresholds => return that game
 const OUTCOME_DEVIATION_THRESHOLD = 0.005 //Deviation of game winrate from 50% => 0.005 = 49.5% - 50.5%
 const MATCHUP_DEVIATION_THRESHOLD = 0.05 //Average deviation of matchup winrates from 50% => 0.15 = 35.0% - 65.0%
 const SEARCH_TIMEOUT = 2000
 
-//0.0, 0.0 => really slow >5000ms, best match
-//0.005, 0.10 => really fast <1000ms, pretty good matching
-//>0.02, >0.15 => fastest <500ms, uneven matching, diminishing speed returns
-
 //Generating role permutations ~250-300ms
 //Bottlenecked by mongo atlas?
 
-//Find the best match using the current queue
+/**
+ * @description Find a match using the current queue
+ * @returns Object containing the best game (or null if no game has been found)
+ */
 export const findMatch = async () => {
 
 

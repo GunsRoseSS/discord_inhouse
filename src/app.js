@@ -38,7 +38,7 @@ import {getAllRankingEmbed, getUserRankEmbed, getRoleRankEmbed, getAverageRankin
 import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js";
 
 import {createEmbed, deleteEmbed, handleButtonInteration, handleMenuInteration, updateEmbeds} from "./interface/embed.js"
-import { getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
+import { getPlayerChampionsEmbed, getPlayerChampionEmbed, getAllChampionsEmbed, getAllPlayerChampionEmbed } from "./interface/champion.js";
 
 import Game from "./models/game.js"
 
@@ -393,7 +393,7 @@ client.on("message", async (message) => {
                         }
 
                         if (args[1] !== "all") {
-                            let embed = await getPlayerChampionEmbedv2(user_id, args[0], userList)
+                            let embed = await getPlayerChampionEmbed(user_id, args[0], userList)
 
                             if (embed) {
                                 embed = createEmbed(embed)
@@ -402,7 +402,7 @@ client.on("message", async (message) => {
                                 message.channel.send("This player has not played this champion before")
                             }
                         } else {
-                            let embed = await getAllPlayerChampionEmbedv2(args[0])
+                            let embed = await getAllPlayerChampionEmbed(args[0])
 
                             if (embed) {
                                 embed = createEmbed(embed)
@@ -433,7 +433,7 @@ client.on("message", async (message) => {
                     }
 
                     if (args[0] !== "all") {
-                        let data = await getPlayerChampionsEmbedv2(user_id, userList)
+                        let data = await getPlayerChampionsEmbed(user_id, userList)
 
                         if (data != null) {
                             let embed = createEmbed(data)
@@ -443,7 +443,7 @@ client.on("message", async (message) => {
                             message.channel.send("This user hasn't played any games")
                         }                 
                     } else {
-                        let data = await getAllChampionsEmbedv2()
+                        let data = await getAllChampionsEmbed()
 
                         let embed = createEmbed(data)
                         embed.send(message.channel, message.author.id)

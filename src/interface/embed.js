@@ -6,6 +6,12 @@ class EmbedManager {
     static embeds = []
 }
 
+
+/**
+ * @description Creates the main discord embed body
+ * @param data Contains the data for the page to display
+ * @returns Discord message embed object
+ */
 const generateMessageEmbed = (data) => {
     let embed = new MessageEmbed()
     embed.setTitle(data.title)
@@ -31,12 +37,18 @@ const generateId = () => {
     return Math.floor(Math.random() * 1000000000)
 }
 
+/**
+ * @description Embed class for handling embeds
+ */
 class Embed {
     constructor(data) {
         this.id = generateId()
         this.init(data)
     }
 
+    //Sets up the embed using the provided data
+    //Uses very simular input to creation of MessageEmbed's in discord.js
+    //If you need help creating one, try looking at some of the other usages within the code or contact one of the developers
     init(data) {
         this.pages = []
         this.disabled = false
@@ -116,6 +128,8 @@ class Embed {
 
     }
 
+
+    //Creates the whole discord Embed, including buttons/menus
     #createEmbedMessage() {
         let message = {}
         message.embed = generateMessageEmbed(this.pages[this.current_page])
@@ -186,6 +200,11 @@ class Embed {
         
     }
 
+    /**
+     * 
+     * @param channel The discord channel object
+     * @param {Number} [user] The id of the user which can interact with buttons/menus on this embed. Leave blank to give all users access
+     */
     async send(channel, user = 0) {
         this.current_page = 0
         this.user = user     

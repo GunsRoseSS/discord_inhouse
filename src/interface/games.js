@@ -14,6 +14,14 @@ import https from "https";
 import {getMemberNickname} from "../helpers/discord.js";
 import {fetchChampionIcon} from "./champion.js";
 
+/**
+ * @description Creates and stores the game within the database
+ * @param {Number} id The id of the game. MUST BE UNIQUE (Used as key for document in db) 
+ * @param game The game data
+ * @param champs An object containing the champions
+ * @param {String} winner Either BLUE or RED
+ * @returns The game on success or null on failure
+ */
 export const createGame = async (id, game, champs, winner) => {
     try {
         let newGame = new Game({
@@ -69,6 +77,13 @@ export const createGame = async (id, game, champs, winner) => {
 
 }
 
+/**
+ * @description Converts the game data into an array of players, ready to update in db
+ * @param game The game data
+ * @param champs An object containing the champions
+ * @param {String} winner Either BLUE or RED
+ * @returns Array of players, each containing {id, team, role, champion, previousElo, afterGameElo}
+ */
 const convertToPlayerList = async (game, champs, winner) => {
     let blue = []
     let red = []
@@ -109,6 +124,11 @@ const convertToPlayerList = async (game, champs, winner) => {
     return blue.concat(red)
 }
 
+/**
+ * @description Creates an embed for the game
+ * @param game The game object (From database)
+ * @returns Embed for the game
+ */
 export const getGameEmbed = (game) => {
     let msg_blue = ""
     let msg_red = ""
