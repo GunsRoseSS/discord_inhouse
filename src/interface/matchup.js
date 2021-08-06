@@ -61,11 +61,11 @@ export const calculateNewElo = (team1, team2, win) => {
 	}
 
 	team1Rating = team1Rating.map(player => {
-		return {mu: Math.max(840, player.mu), sigma: Math.max(110, player.sigma)}
+		return {mu: Math.max(parseInt(process.env.MINIMUM_MU), player.mu), sigma: Math.max(parseInt(process.env.MINIMUM_SIGMA), player.sigma)}
 	})
 
 	team2Rating = team2Rating.map(player => {
-		return {mu: Math.max(840, player.mu), sigma: Math.max(110, player.sigma)}
+		return {mu: Math.max(parseInt(process.env.MINIMUM_MU), player.mu), sigma: Math.max(parseInt(process.env.MINIMUM_SIGMA), player.sigma)}
 	})
 
 	

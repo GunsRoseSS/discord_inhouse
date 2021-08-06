@@ -4,7 +4,7 @@ export const createUser = async (id) => {
 	//Warning: create users only through the queue command, or it will fuck up your id and therefore everything else.
 	//Update: we still haven't found a way to fix this! MongoDB too stronk!
 
-	let start = {mu: 1340, sigma: 280}
+	let start = {mu: parseInt(process.env.STARTING_MU), sigma: parseInt(process.env.STARTING_SIGMA)}
 
 	const user = await getUser(id)
 

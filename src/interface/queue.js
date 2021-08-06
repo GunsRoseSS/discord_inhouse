@@ -22,10 +22,6 @@ export const addToQueue = async (id, roles) => {
 	await user.save()
 }
 
-export const getQueue = async () => {
-	return Queue.find();
-}
-
 export const clearQueue = async () => {
 	const status = await Queue.deleteMany()
 
