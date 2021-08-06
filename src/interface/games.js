@@ -524,10 +524,10 @@ export const getGameStats = (matchID) => {
     let response = {};
 
     let options = {
-        host: process.env.SCRAPPER_API_HOST,
-        path: `${process.env.SCRAPPER_API_PATH}/${matchID}`,
+        host: process.env.SCRAPER_API_HOST,
+        path: `${process.env.SCRAPER_API_PATH}/${matchID}`,
         headers: {
-            'x-api-key': process.env.SCRAPPER_API_KEY
+            'x-api-key': process.env.SCRAPER_API_KEY
         }
     }
 
