@@ -89,8 +89,12 @@ const stats1 = [
         name: '!meta',
         aliases: '!champstats',
         description: "Displays the current meta for the played champions."
+    },
+    {
+        name: '!halloffame ?[champion]',
+        aliases: '!hof',
+        description: "Displays the the best player for each statistic either in general or for a [champion]"
     }
-
 ]
 
 const stats2 = [
