@@ -679,23 +679,6 @@ client.on("message", async (message) => {
                     createEmbed(stats).send(message.channel, message.author);
                 }
                 break
-            case "uwu":
-                {
-                    message.channel.send("OwO", {files: ["https://cdn.discordapp.com/attachments/287347623139082240/871056038927941653/alex_owo.png"]})
-                }
-                break
-            case "turboint":
-            case "int":
-            case "shame":
-            case "l9":
-                {
-                    message.channel.send({files: ["https://cdn.discordapp.com/attachments/287347623139082240/871055953003425863/l9.png"]})
-                }
-                break
-            case "dab":
-            case "cancer":
-                message.channel.send('I hate you for making me do this.', {files: ["https://cdn.discordapp.com/attachments/863014796915638296/871739279515213824/dabgif.gif"]})
-                break
             case "creators":
             case "fathers":
                 message.channel.send('I was made by <@278604461436567552> and <@139392064386367489>! That means I have 2 dads hihi');
