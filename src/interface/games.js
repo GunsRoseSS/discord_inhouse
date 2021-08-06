@@ -588,7 +588,6 @@ export async function insertGameStats(matchID) {
             for (let player of game.players) {
                 let champStats = stats.players.find(element => element.champion === player.champion);
                 if (!champStats) {
-                    console.log(player);
                     reject('Player/Champion not found');
                 }
                 delete champStats.champion;
@@ -612,7 +611,7 @@ export const getPlayerStats = async (playerID, userList) => {
     }
 
     //search for every game in the matchhistory of the user.
-    let games = await Game.find({$or: history.map(match => {_id: match})});
+    let games = await Game.find({$or: history.map(match => match = {_id: match})});
 
     let stats = {};
 
