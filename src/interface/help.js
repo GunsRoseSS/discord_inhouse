@@ -21,13 +21,18 @@ const misc = [//this way it's easier to edit help in case we need to update it.
         aliases: '-',
         description: 'Changes the image of the bot. It might take a while to process.'
     },
+    {
+        name: '!dab',
+        aliases: '-',
+        description: 'Forces the bot to dab.'
+    },
 ]
 
 const preGame = [
     {
         name: '!queue [Role #1] ?[Role #2] ...?[Role #5]',
         aliases: '-',
-        description: 'Inserts you into the queue for the next game. You can select multiple roles in one command or use !queue all to queue for all roles.'
+        description: 'Inserts you into the queue for the next game. You can select multiple roles in one command or use !queue all to queue for all roles. Admins can also use !queue clear.'
     },
     {
         name: '!leave',
@@ -134,7 +139,7 @@ const history = [
     }
 ]
 
-
+//create a non-dynamic paginated embed.
 export const convertHelpToEmbed = (page) => {
     let helpArray = [];
     switch (page){
@@ -160,6 +165,7 @@ export const convertHelpToEmbed = (page) => {
 
     let embedString = '';
     for (let command of helpArray) {
+        //using fields here would look really unstructured and ugly, so we are using code blocks for this.
         embedString = embedString + '```COMMAND:\t' + command.name + '\nALIASES:\t' + command.aliases + '\n\n' + command.description + '```';
 
     }

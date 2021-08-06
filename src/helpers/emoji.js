@@ -1,3 +1,4 @@
+//easily return role emojis.
 export const getRoleEmoji = (role) => {
     switch (role) {
         case "top":
@@ -13,7 +14,7 @@ export const getRoleEmoji = (role) => {
     }
 }
 
-
+//this is used in the match embeds when declining/accepting stuff.
 export const getStateEmoji = (state) => {
     switch (state) {
         case "accept":
@@ -25,6 +26,7 @@ export const getStateEmoji = (state) => {
     }
 }
 
+//this is used for the emojis in !teammates
 export const emojiGainedSelector = (mmr) => {
     if (mmr >= 150) {
         return ":crown:"
@@ -39,6 +41,7 @@ export const emojiGainedSelector = (mmr) => {
     }
 }
 
+//this is used in !nemesis
 export const emojiOpponentGainedSelector = (mmr) => {
     if (mmr >= 150) {
         return ":free:"
@@ -53,6 +56,7 @@ export const emojiOpponentGainedSelector = (mmr) => {
     }
 }
 
+//this is used to get ranking emojis.
 export const emojiNumberSelector = (num) => {
     switch (num) {
         case 1 || '1':

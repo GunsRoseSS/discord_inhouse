@@ -2,6 +2,7 @@ import User from "../models/user.js"
 
 export const createUser = async (id) => {
 	//Warning: create users only through the queue command, or it will fuck up your id and therefore everything else.
+	//Update: we still haven't found a way to fix this! MongoDB too stronk!
 
 	let start = {mu: 1340, sigma: 280}
 
@@ -66,21 +67,8 @@ export const getUserElo = async (id, role) => {
 	}
 }
 
-export const addElo = async (id, role, amount) => {
-	const user = await getUser(id)
-	
-	if (user) {
-		user.elo.set(role, user.elo.get(role) + amount)
-		await user.save()
-	}
-}
-
 export const getUsers = async() => {
 	return User.find();
-}
-
-export const deleteUsers = async() => {
-	await User.deleteMany()
 }
 
 export const getUserMatchHistory = async(id) => {
@@ -93,24 +81,4 @@ export const getUserMatchHistory = async(id) => {
 	}
 
 	
-}
-
-export const getUserChampionStats = async (userID, champion) => {
-	const user = await getUser(userID);
-
-	if (!user){
-		return null
-	}
-
-	if (!champion){
-		return user.championStats
-	}
-
-	for (let champ of user.championStats){
-		if (champ.name === champion){
-			return champ
-		}
-	}
-
-	return null
 }

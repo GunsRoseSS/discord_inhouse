@@ -5,7 +5,7 @@ const gameSchema = mongoose.Schema({
     matchID: Number, //note: this is the riot Match ID, not the DB ID.
     players: [{
         id: String, //discord id fetch from player models
-        team: String, //'red' 'blue'
+        team: String, //'RED' 'BLUE'
         role: String,
         champion: String,
         previousElo: {mu: Number, sigma: Number},

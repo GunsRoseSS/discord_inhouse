@@ -34,6 +34,7 @@ export const getRanking = async () => {
     }, [])
 }
 
+//get the ranking(s) of a specific user. used for !rank
 export const getUserRanking = async (id) => {
     let ranking = await getRanking()
 
@@ -54,6 +55,7 @@ export const getUserRanking = async (id) => {
     })
 }
 
+//gets the ranking for a specific role.
 export const getRoleRanking = async (role) => {
     let ranking = await getRanking()
 
@@ -64,6 +66,7 @@ export const getRoleRanking = async (role) => {
     return roleRanking
 }
 
+//filter all rating to match a specific role. (all other role ratings are discarded)
 const filterRatingByRole = (role, users) => {
     return users.filter(user => {
         if (user.role === role) {
@@ -72,6 +75,7 @@ const filterRatingByRole = (role, users) => {
     })
 }
 
+//simple sort
 const sortRating = (users) => {
     return users.sort((user1, user2) => {
         if (user1.mmr > user2.mmr) {
@@ -83,6 +87,7 @@ const sortRating = (users) => {
     })
 }
 
+//creates the embed for !rank
 export const getUserRankEmbed = async (id, nickname) => {
     let userRanking = await getUserRanking(id)
 
@@ -112,6 +117,7 @@ export const getUserRankEmbed = async (id, nickname) => {
     return embed
 }
 
+//creates the embed for !ranking [role]
 export const getRoleRankEmbed = async (role) => {
     const PAGE_SIZE = 10
 
@@ -158,6 +164,7 @@ export const getRoleRankEmbed = async (role) => {
     return pages
 }
 
+//creates the embed for !ranking
 export const getAllRankingEmbed = async () => {
     const PAGE_SIZE = 10
 
@@ -206,6 +213,7 @@ export const getAllRankingEmbed = async () => {
     return pages
 }
 
+//creates the embed for !ranking average
 export const getAverageRankingData = async () => {
     let users = await getUsers();
     let embedData = [];

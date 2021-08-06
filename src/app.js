@@ -1,11 +1,8 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import {Client} from "discord.js";
-import EasyEmbedPages from 'easy-embed-pages';
 import disbut from "discord-buttons";
 import fs from "fs";
-
-import { ordinal } from "openskill";
 
 import {createUser, getUser} from "./interface/user.js"
 import {addToQueue, clearQueue, playersInQueue, getQueueEmbed, leaveQueue, removePlayersFromQueue} from "./interface/queue.js"
@@ -26,8 +23,6 @@ import {
     getGameByMatchID,
     getAllGames,
     getMetaEmbed,
-    getUserGames,
-    getGameStats,
     insertGameStats,
     getPlayerStats,
     getHallOfFameStats
@@ -44,7 +39,6 @@ import {fetchGuildMemberNicknames, getMemberNickname} from "./helpers/discord.js
 
 import {createEmbed, deleteEmbed, handleButtonInteration, handleMenuInteration, updateEmbeds} from "./interface/embed.js"
 import { getPlayerChampionsEmbedv2, getPlayerChampionEmbedv2, getAllChampionsEmbedv2, getAllPlayerChampionEmbedv2 } from "./interface/champion.js";
-import { calculateExpectedOutcome, getMatchups } from "./interface/matchup.js";
 
 import Game from "./models/game.js"
 
@@ -74,68 +68,18 @@ client.on('guildCreate', guild => {
     guild.systemChannel.send(`Hello, I'm Inhouse Bot. For a list of my commands, please type !help. Please make sure I am set up properly before using me.`);
 });
 
+//update the nickname dictionary when a new member joins the server. Unfortunately there's no listener for when a nickname in the server changes. If you want to update the nickname list you should probably restart the bot.
 client.on("guildMemberAdd", async() => {
     userList = await fetchGuildMemberNicknames(client);
 })
 
 client.on("message", async (message) => {
-    if (message.author.bot) return
-    let user_id, user, embedData, nickname, embed, champion, pages;
+    if (message.author.bot) return //dont react to own messages
+    let user_id, user, embedData, nickname, embed, pages;
     if (message.content.startsWith("!")) {
-        var [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
+        let [cmd, ...args] = message.content.replace(/,/g, '').trim().substring(1).toLowerCase().split(/\s+/);
 
         switch (cmd) {
-            case "test":
-                {
-                    
-                }
-                break
-            case "addgame":
-                {
-                    if (message.author.id == "278604461436567552") {
-                        console.log("Adding game")
-                        let blue = [
-                            {id: "154648565522759681", champ: "Trundle"},
-                            {id: "139392064386367489", champ: "Viego"},
-                            {id: "114071480526045191", champ: "Orianna"},
-                            {id: "219125929471901706", champ: "Ezreal"},
-                            {id: "347380823810637825", champ: "Thresh"}
-                        ]
-
-                        let red = [
-                            {id: "328912750128660481", champ: "Kayle"},
-                            {id: "114058651651538952", champ: "XinZhao"},
-                            {id: "231396629297627137", champ: "KogMaw"},
-                            {id: "157881124939497472", champ: "Lucian"},
-                            {id: "182862839692787712", champ: "Swain"}
-                        ]
-
-                        let m = []
-
-                        let r = ["top", "jgl", "mid", "adc", "sup"]
-
-                        for (let i=0;i<5;i++) {
-                            let u1 = await getUser(blue[i].id)
-                            let u2 = await getUser(red[i].id)
-                            m.push({player1: blue[i].id, player2: red[i].id, probability: calculateExpectedOutcome(ordinal(u1.roles[r[i]].mmr), ordinal(u2.roles[r[i]].mmr))})
-                        }
-
-                        let c = {}
-                        
-                        c["BLUE"] = blue.map(player => {
-                            return player.champ
-                        })
-
-                        c["RED"] = red.map(player => {
-                            return player.champ
-                        })          
-
-                        await createGame(17, m, c,"BLUE")
-
-                        console.log("Done")
-                    }
-                }    
-            break
             case "queue":
             {
                 message.react('⚔');
@@ -148,7 +92,6 @@ client.on("message", async (message) => {
 
                 user_id = message.author.id;
 
-
                 switch (args[0]) {
                     case "clear":
                         if (admin) {
@@ -158,19 +101,7 @@ client.on("message", async (message) => {
                             message.channel.send("Shut up nerd, you're not an admin.")
                             return
                         }
-                    case "count":
-                        if (admin) {
-                            message.channel.send(`${(await playersInQueue()).length} player(s) in queue`)
-                            return
-                        } else {
-                            message.channel.send("Shut up nerd, you're not an admin.")
-                            return
-                        }
-                    case "u":
-                        user_id = args[1]
-                        break
                 }
-
 
                 user = await getUser(user_id);
 
@@ -180,7 +111,7 @@ client.on("message", async (message) => {
 
                 let roles = formatRoles(args);
 
-                if (roles.length != 0) {
+                if (roles.length !== 0) {
                     await addToQueue(user_id, roles);
                     (await getQueueEmbed()).send(message.channel)
                 } else {
@@ -219,7 +150,8 @@ client.on("message", async (message) => {
 
                 let game;
 
-                if (args[0] > 10000) {
+                //we have two ids for a match, firstly theres the count, which gets added after a game, secondly theres the riot MatchID, which gets added with !link
+                if (args[0] > 100000) { //assuming that there would be less than 100.000 games :P
                     game = await getGameByMatchID(args[0])
                 } else {
                     game = await getGameByID(args[0])
@@ -331,21 +263,21 @@ client.on("message", async (message) => {
                 message.react('📖')
 
                 user_id = message.author.id
-                nickname = getMemberNickname(user_id, userList)
+                nickname = getMemberNickname(user_id, userList);
 
                 if (args.length > 0) {
                     message.channel.send('You can only look up history for yourself (dabs)');
                     break
                 }
 
-                embedData = await getMatchHistoryData(user_id)
+                embedData = await getMatchHistoryData(user_id);
 
                 if (!embedData.matches[0]) {
                     message.channel.send('You have not played any matches yet.')
                     break
                 }
 
-                pages = convertMatchHistoryToEmbed(nickname, embedData)
+                pages = convertMatchHistoryToEmbed(nickname, embedData);
                 createEmbed({
                     title: `:book: Match history for ${nickname} :book:`,
                     colour: '#0099ff',
@@ -353,6 +285,7 @@ client.on("message", async (message) => {
                 }).send(message.channel, message.author.id)
                 break
             case 'epic':
+                //epic
                 message.channel.send('epic');
                 break
             case "matchid":
@@ -362,7 +295,7 @@ client.on("message", async (message) => {
                     let success = await updateMatchID(args[0], args[1]);
                     if (success) {
                         message.channel.send(`Match id set for game ${args[0]} -> ${args[1]}, stats will be updated soon.`);
-                        await insertGameStats(args[1]).then(resolved => {
+                        await insertGameStats(args[1]).then(() => {
                             message.channel.send(`Stats are updated for game ${args[0]} -> ${args[1]}`);
                         })
 
@@ -372,7 +305,7 @@ client.on("message", async (message) => {
                 } else {
                     message.channel.send("No, that's not how that works, idiot. !link [matchID] [RiotID]");
                 }
-              break
+                break
             case 'rank':
                 {
                     message.react('👑');
@@ -380,11 +313,11 @@ client.on("message", async (message) => {
                     let username
                     let id
 
-                    if (args.length == 0) {
+                    if (args.length === 0) {
                         id = message.author.id;
                         username = getMemberNickname(id, userList);
                     } else {
-                        id = args[0].slice(3, args[0].length - 1)
+                        id = args[0].slice(3, args[0].length - 1) //discord pings get passed as <@!id>
 
                         try {
                             username = getMemberNickname(id, userList);
@@ -424,12 +357,6 @@ client.on("message", async (message) => {
 
                             if (embed){
                                 embed.send(message.channel, message.author.id)
-                                /*
-                                embed.start({
-                                    channel: message.channel,
-                                    author: message.author
-                                })
-                                */
                                 break
                             } else {
                                 message.channel.send('No games have been played so far.')
@@ -624,7 +551,7 @@ client.on("message", async (message) => {
                 let nickname;
                 let user;
 
-                if (args.length == 0) {
+                if (args.length === 0) {
                     user_id = message.author.id
                     nickname = getMemberNickname(user_id, userList);
 
@@ -644,9 +571,9 @@ client.on("message", async (message) => {
                     if (role[0]) {
                         let img = await generateRoleGraph(role[0], userList)
 
-                        if (img != "error") {
+                        if (img !== "error") {
                             await message.channel.send({files: [`${img}`]})
-                            fs.unlink(`${img}`, (e) => {
+                            fs.unlink(`${img}`, () => {
                             })
                         } else {
                             message.channel.send("Error: something went wrong! There probably hasn't been any games played at all.")
@@ -665,9 +592,10 @@ client.on("message", async (message) => {
 
                 let img = await generateGraph(user_id, nickname)
 
-                if (img != "error") {
+                if (img !== "error") {
                     await message.channel.send({files: [`${img}`]});
-                    fs.unlink(`${img}`, (e) => {
+                    fs.unlink(`${img}`, () => {
+                        //dont know what to put here, it should never give errors anyways
                     })
                 } else {
                     message.channel.send(`Something went wrong! Does ${args.join(" ")} exist?`)
@@ -810,7 +738,7 @@ mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin
     serverSelectionTimeoutMS: 5000
 }).then(() => {
     client.login(process.env.BOT_TOKEN)
-}, err => {
+}, () => {
     console.log(`Failed to connect to MongoDB. Check that your ip is whitelisted.`)
 })
 

@@ -14,6 +14,7 @@ export const fetchChampionIcon = (champion) => {
     return `https://ddragon.leagueoflegends.com/cdn/11.15.1/img/champion/${champion}.png`
 }
 
+//fetches champion data for a specific player.
 export const getPlayerChampionDatav2 = async (id) => {
     let history = await getUserMatchHistory(id);
 
@@ -126,6 +127,7 @@ export const getPlayerChampionDatav2 = async (id) => {
     return champions
 }
 
+//fetches data for all champions and all players.
 const getAllChampionsDatav2 = async () => {
     let games = await Game.find()
 
@@ -133,7 +135,7 @@ const getAllChampionsDatav2 = async () => {
 
     games.forEach(game => {
         game.players.forEach((player, index) => {
-            let win = ((game.winner == "BLUE" && index < 5) || (game.winner == "RED" && index >= 5)) ? true : false
+            let win = ((game.winner === "BLUE" && index < 5) || (game.winner === "RED" && index >= 5))
 
             if (!(player.id in players)) {
                 players[player.id] = {}
@@ -156,6 +158,7 @@ const getAllChampionsDatav2 = async () => {
     return players
 }
 
+//creates an embed for the fetched data from getAllChampionsDatav2, but only for one champion (for all players)
 export const getAllPlayerChampionEmbedv2 = async (champion) => {
     let data = await getAllChampionsDatav2()
 
@@ -231,6 +234,7 @@ export const getAllPlayerChampionEmbedv2 = async (champion) => {
     }
 }
 
+//same as above function but for one player it fetches all champions
 export const getAllChampionsEmbedv2 = async () => {
     let data = await getAllChampionsDatav2()
 
@@ -295,6 +299,7 @@ export const getAllChampionsEmbedv2 = async () => {
     }
 }
 
+//ok yeah idk kiwi made this
 export const getPlayerChampionsEmbedv2 = async (id, userList) => {
     let pages = []
 
@@ -369,6 +374,7 @@ export const getPlayerChampionsEmbedv2 = async (id, userList) => {
     return embed
 }
 
+//whatever man, if someone doesnt understand just contact me
 export const getPlayerChampionEmbedv2 = async (id, champion, userList) => {
     let champs = await getPlayerChampionDatav2(id);
 

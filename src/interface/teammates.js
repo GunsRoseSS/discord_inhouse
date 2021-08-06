@@ -9,16 +9,16 @@ export const getTeammateStats = async (id, flip = false) => {
     let userGames = await getUserGames(id)
 
     let data = userGames.reduce((out, game) => {
-        let index = game.players.findIndex(element => element.id == id)
+        let index = game.players.findIndex(element => element.id === id)
         let user = game.players[index]
         let mmrDiff = Math.floor(ordinal(user.afterGameElo) - ordinal(user.previousElo))
-        let win = (index < 5 && game.winner == "BLUE") || (index >= 5 && game.winner == "RED") ? true : false
+        let win = (index < 5 && game.winner === "BLUE") || (index >= 5 && game.winner === "RED")
 
         let start = index < 5 ? (flip ? 5 : 0) : (flip ? 0 : 5)
         let end = index < 5 ? (flip ? 10 : 5) : (flip ? 5 : 10)
         for (let i=start;i<end;i++) {
             let player = game.players[i]
-            if (player.id != id) {
+            if (player.id !== id) {
                 if (player.id in out) {
                     out[player.id].gained += mmrDiff
                     out[player.id].wins += win ? 1 : 0

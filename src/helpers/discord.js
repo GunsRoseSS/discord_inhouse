@@ -1,3 +1,4 @@
+//fetches all nicknames from the server.
 export const fetchGuildMemberNicknames = async (client) => {
     let guild = await client.guilds.fetch(process.env.GUILD_ID);
     let members = await guild.members.fetch();
@@ -8,6 +9,7 @@ export const fetchGuildMemberNicknames = async (client) => {
     }, {});
 }
 
+//gets a nickname from a user from the fetched list above.
 export const getMemberNickname = (memberID, userList) => {
     return userList[memberID.toString()]
 }

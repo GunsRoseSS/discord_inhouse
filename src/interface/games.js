@@ -12,8 +12,7 @@ import {sortMetaData} from "../helpers/sort.js";
 import {createEmbed} from "./embed.js";
 import https from "https";
 import {getMemberNickname} from "../helpers/discord.js";
-import User from "../models/user.js";
-import {fetchChampionIcon, getPlayerChampionDatav2} from "./champion.js";
+import {fetchChampionIcon} from "./champion.js";
 
 export const createGame = async (id, game, champs, winner) => {
     try {
@@ -41,12 +40,12 @@ export const createGame = async (id, game, champs, winner) => {
                 }
             }
 
-            if (location == -1) {
+            if (location === -1) {
                 location = user.championStats.length
                 user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
             }
 
-            if (player.team == winner) {
+            if (player.team === winner) {
                 user.roles[player.role].wins += 1
                 user.championStats[location].wins += 1
 
@@ -77,14 +76,14 @@ const convertToPlayerList = async (game, champs, winner) => {
     const roles = ["top", "jgl", "mid", "adc", "sup"]
 
     let originalElos = {"blue": [], "red": []}
-    let updatedElos = []
+    let updatedElos;
 
     for (let i = 0; i < game.length; i++) {
         originalElos.blue.push(await getUserElo(game[i].player1, roles[i]))
         originalElos.red.push(await getUserElo(game[i].player2, roles[i]))
     }
 
-    updatedElos = calculateNewElo(originalElos.blue, originalElos.red, winner == "BLUE" ? true : false)
+    updatedElos = calculateNewElo(originalElos.blue, originalElos.red, winner === "BLUE")
 
     for (let i = 0; i < game.length; i++) {
 
@@ -118,7 +117,7 @@ export const getGameEmbed = (game) => {
     for (let i = 0; i < game.players.length; i++) {
         let player = game.players[i]
         let elo_diff = Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
-        if (Math.floor(i / 5) == 0) {
+        if (Math.floor(i / 5) === 0) {
             msg_blue += `${getRoleEmoji(player.role)} \u2800 <@${player.id}> : ${player.champion.split(/(?=[A-Z])/).join(" ")} **${elo_diff < 0 ? "-" : "+"}${Math.abs(elo_diff)}** \n`
         } else {
             msg_red += `${getRoleEmoji(player.role)} \u2800 <@${player.id}> : ${player.champion.split(/(?=[A-Z])/).join(" ")} **${elo_diff < 0 ? "-" : "+"}${Math.abs(elo_diff)}** \n`
@@ -140,6 +139,7 @@ export const getGameEmbed = (game) => {
 
 }
 
+//these functions are all database queries.
 export const getGameByMatchID = async (matchID) => {
     return Game.findOne({matchID: matchID})
 }
@@ -181,34 +181,38 @@ export const getUserGames = async (id) => {
 }
 
 export const getMatchHistoryData = async (id) => {
+    //make arrays
     let dates = [],
         roles = [],
         champions = [],
         winLoss = [],
         mmrGainLoss = [];
 
+    //get data
     let matches = await getUserMatchHistory(id)
 
     let newMatches = []
 
+    //put data into arrays
     for (let match of matches) {
         let matchData = await getGameByID(match)
-        let player = matchData.players.find(element => element.id == id)
+        let player = matchData.players.find(element => element.id === id)
 
         dates.push(matchData.date)
         roles.push(player.role)
         champions.push(player.champion)
         mmrGainLoss.push(Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo)))
 
-        winLoss.push(player.team == matchData.winner ? "win" : "loss")
+        winLoss.push(player.team === matchData.winner ? "win" : "loss")
 
-        if (matchData.matchID == 0) {
+        if (matchData.matchID === 0) {
             newMatches.push(matchData._id)
         } else {
             newMatches.push(matchData.matchID)
         }
     }
 
+    //return arrays (reverse is used because it sorts it the wrong way)
     return {
         matches: newMatches.reverse(),
         dates: dates.reverse(),
@@ -220,7 +224,7 @@ export const getMatchHistoryData = async (id) => {
 }
 
 export const convertMatchHistoryToEmbed = (name, historyData) => {
-
+    //format these three data points for the embeds
     historyData.roles = historyData.roles.map(role => {
         return getRoleEmoji(role)
     })
@@ -234,6 +238,7 @@ export const convertMatchHistoryToEmbed = (name, historyData) => {
     })
 
     let links = historyData.matches.map(match => {
+        //check if the match is linked
         if (match > 10000) {
             return `https://matchhistory.euw.leagueoflegends.com/en/#match-details/EUW1/${match}`
         } else {
@@ -250,6 +255,7 @@ export const paginateHistoryEmbed = (historyData, links) => {
     let done = false;
     let loopCounter = 0;
 
+    //this is the old way of paginating stuff but it works
     while (!done) {
         let subList = {
             loop: loopCounter,
@@ -262,8 +268,10 @@ export const paginateHistoryEmbed = (historyData, links) => {
             links: []
         }
         let counter = 0;
+        //check if the page is full or the match array is empty
         while (historyData.matches.length !== 0 && counter < 5) {
             let embedNumber = loopCounter * 5 + counter + 1
+            //push stuff into subarray that will become a page
             subList.matches.push(emojiNumberSelector(embedNumber) + ': ' + historyData.matches[0]);
             subList.dates.push(historyData.dates[0]);
             subList.roles.push(historyData.roles[0]);
@@ -272,6 +280,7 @@ export const paginateHistoryEmbed = (historyData, links) => {
             subList.mmrGainLoss.push(`${historyData.mmrGainLoss[0] < 0 ? "-" : "+"}${Math.abs(historyData.mmrGainLoss[0])}`);
             subList.links.push(emojiNumberSelector(embedNumber) + ': ' + links[0])
 
+            //delete pushed data from the main array
             historyData.matches.shift();
             historyData.dates.shift();
             historyData.roles.shift();
@@ -283,6 +292,7 @@ export const paginateHistoryEmbed = (historyData, links) => {
             counter += 1;
         }
 
+        //here the data gets formatted into the pages data type
         pages.push({
             fields: [
                 {
@@ -385,6 +395,7 @@ export const getMetaEmbed = (games, type) => {
         }
     }
 
+    //add banrate to the dictionary
     Object.entries(bans).forEach(([ban, count]) => {
         if (Object.keys(dictChamps).includes(ban)) {
             dictChamps[ban].banRate = count
@@ -393,7 +404,7 @@ export const getMetaEmbed = (games, type) => {
         }
     })
 
-    dictChamps = sortMetaData(dictChamps, type);
+    dictChamps = sortMetaData(dictChamps, type); //sort
 
     let pages = [];
     const PAGE_SIZE = 10;
@@ -401,6 +412,7 @@ export const getMetaEmbed = (games, type) => {
     let champ_msg = "";
     let mmr_msg = "";
 
+    //paginate all the champions
     Object.entries(dictChamps).forEach(([champion, stats], index) => {
         if (champion !== 'pickRate') {
             pickRate_msg += `${Math.round(stats.pickRate / dictChamps["pickRate"] * 100 * 10 * 10) / 10}%, ${Math.round(stats.banRate / dictChamps["pickRate"] * 100 * 10 * 10) / 10}%\n`
@@ -437,6 +449,7 @@ export const getMetaEmbed = (games, type) => {
 
     let title_msg = "Meta data for all champions"
 
+    //this is used for the sorting button
     switch (type) {
         case "mmr":
             title_msg += " sort: MMR High -> Low"
@@ -478,6 +491,7 @@ export const getMetaEmbed = (games, type) => {
     }
 }
 
+//this function is used for the sorting button that allows you to sort the embed in a specific way.
 async function menuSort(embed, menuValue) {
     let data
     let games = await getAllGames();
@@ -505,11 +519,20 @@ async function menuSort(embed, menuValue) {
     embed.update()
 }
 
+//this function gets called when linking a matchID to a match.
 export const getGameStats = (matchID) => {
     let response = {};
 
+    let options = {
+        host: process.env.SCRAPPER_API_HOST,
+        path: `${process.env.SCRAPPER_API_PATH}/${matchID}`,
+        headers: {
+            'x-api-key': process.env.SCRAPPER_API_KEY
+        }
+    }
+
     return new Promise((resolve, reject) => {
-        https.get(`https://api.kieranbaker.uk/league/history/${matchID}`, callback => {
+        https.get(options, callback => {
             let body = '';
 
             callback.on('data', function (chunk) {
@@ -519,6 +542,7 @@ export const getGameStats = (matchID) => {
             callback.on('end', function () {
                 response = JSON.parse(body);
                 if (response !== {}) {
+                    console.log(response);
                     resolve(response);
                 } else {
                     reject('no data returned');
@@ -531,6 +555,7 @@ export const getGameStats = (matchID) => {
     })
 }
 
+//this function takes the game stats and inserts them into the db for the specific game.
 export async function insertGameStats(matchID) {
     let stats;
     let game = await getGameByMatchID(matchID);
@@ -558,6 +583,7 @@ export async function insertGameStats(matchID) {
     })
 }
 
+//this function is used for !stats
 export const getPlayerStats = async (playerID, userList) => {
     let history = await getUserMatchHistory(playerID);
 
@@ -565,12 +591,14 @@ export const getPlayerStats = async (playerID, userList) => {
         return null
     }
 
-    let games = await Game.find({$or: history.map(match => match = {_id: match})});
+    //search for every game in the matchhistory of the user.
+    let games = await Game.find({$or: history.map(match => {_id: match})});
 
     let stats = {};
 
     let statList = ['kills', 'deaths', 'assists', 'cs', 'gold', 'spree', 'champ_dmg_total', 'objective_dmg', 'turret_dmg', 'healed_dmg', 'taken_dmg_total', 'wards_placed', 'control_wards'];
 
+    //for each game, calculate/add stats.
     games.forEach(game => {
         let player = game.players.find(element => element.id === playerID);
         let win = game.winner === player.team;
@@ -657,6 +685,7 @@ export const getPlayerStats = async (playerID, userList) => {
         }
     })
 
+    //calculate averages and other percentages.
     for (let stat of statList) {
         if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
             stats[`avg_${stat}`] = Math.round(stats[`avg_${stat}`] * 10 / stats.divideBy) / 10; //provides one decimal, useful for lower number stats
@@ -676,10 +705,8 @@ export const getPlayerStats = async (playerID, userList) => {
     }
 }
 
+//fetches the embed for the player stats.
 export const getPlayerStatsEmbed = (playerID, userList, stats) => {
-    if (stats.best_kda.calc === 9999) {
-        stats.best_kda.calc = 'Perfect'
-    }
     return {
         title: `:chart_with_upwards_trend: Statistics for ${getMemberNickname(playerID, userList)} :chart_with_upwards_trend:`,
         description: "Type **!hof** or **!hof [champion]** to see the top scores for all/a single champion.",
@@ -729,6 +756,7 @@ export const getPlayerStatsEmbed = (playerID, userList, stats) => {
     }
 }
 
+//slightly different function for !hof
 export const getHallOfFameStats = async (userList, champion) => {
     let statList = ['kills', 'deaths', 'assists', 'cs', 'gold', 'spree', 'champ_dmg_total', 'objective_dmg', 'turret_dmg', 'healed_dmg', 'taken_dmg_total', 'wards_placed', 'control_wards'];
     let games = await getAllGames();
@@ -742,6 +770,7 @@ export const getHallOfFameStats = async (userList, champion) => {
         title = `:hushed: Hall of Fame: The best player of each statistic! :hushed:`;
     }
 
+    //instead of looking at user match history for each user, it takes all games in the db and dynamically calculates the statistics for each user per game.
     for (let game of games) {
         let statsEntered = false;
         if (game.bans.length > 0) {
@@ -770,6 +799,7 @@ export const getHallOfFameStats = async (userList, champion) => {
                     continue
                 }
             }
+            //in this function, stats is a dictionary with stats for each player.
             if (!stats[user.id]) {
                 stats[user.id] = {};
             }
@@ -861,6 +891,7 @@ export const getHallOfFameStats = async (userList, champion) => {
         }
     }
 
+    //calculating averages again
     Object.keys(stats).forEach(player => {
         for (let stat of statList) {
             if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
@@ -875,6 +906,7 @@ export const getHallOfFameStats = async (userList, champion) => {
         stats[player].avg_kda = Math.round((stats[player].avg_kills + stats[player].avg_assists) / stats[player].avg_deaths * 100) / 100;
     })
 
+    //in this part the best of the best is selected.
     Object.keys(stats).forEach(player => {
         if (Object.entries(fullStats).length !== 0) {
             Object.entries(stats[player]).forEach(([key, value]) => { //initialize string if its empty
@@ -945,6 +977,8 @@ export const getHallOfFameStats = async (userList, champion) => {
 
     })
 
+    //create embed structure.
+    //possible improvement would be to remove the - champion tag when requesting !hof [champion]
     return {
         title: title,
         description: "Type **!stats** or **!hof [@player]** to see the personal stats of yourself or another [@player].",
@@ -1007,3 +1041,4 @@ export const getHallOfFameStats = async (userList, champion) => {
         footer: ""
     }
 }
+//we made 1000 lines woooooo!

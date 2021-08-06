@@ -1,5 +1,6 @@
 import {ordinal} from "openskill"
 
+//this is the main sorting algorithm. It's completely fucked but it works. Needs rework probably
 export const quickSortPlayers = (players, role) => {
     switch (role) {
         case 'top':
@@ -63,6 +64,7 @@ export const quickSortPlayers = (players, role) => {
     return players.reverse()
 }
 
+//a different sorting algorithm used for !meta command.
 export const sortMetaData = (data, type) => {
     let items = Object.keys(data).map(function(key) {
         return [key, data[key]];

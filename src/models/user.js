@@ -30,15 +30,6 @@ const userSchema = mongoose.Schema({
 		},
 	},
 	matchHistory: [{type: String}],
-	championStats: [
-		{
-			name: String,
-			mmrDiff: Number, // +/- mmr gains
-			wins: Number,
-			losses: Number
-		}
-	]
-
 })
 
 const User = mongoose.model("User", userSchema)

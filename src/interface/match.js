@@ -1,7 +1,6 @@
 import {MessageEmbed} from "discord.js"
 import {getRoleEmoji, getStateEmoji} from "../helpers/emoji.js"
 import { btnAcceptClick, btnAcceptWinClick, btnDeclineClick, btnDeclineWinClick } from "../app.js"
-import https from 'https';
 
 export const getMatchMessageEmbed = (match, player_states, started = false) => {
     let match_embed = new MessageEmbed()

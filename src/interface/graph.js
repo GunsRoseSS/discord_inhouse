@@ -19,7 +19,6 @@ export const generateRoleGraph = async (role, userList, count = 30) => {
     games = games.slice(Math.max(games.length - count, 0));
 
     let start = new Date(games[0].date.getTime());
-    let end = games[games.length - 1].date;
     start.setDate(start.getDate() - 1);
 
     let num_games = games.length
@@ -59,7 +58,7 @@ export const generateRoleGraph = async (role, userList, count = 30) => {
             }
             o.push(game.after)
             j++
-            if (index == games[key].length-1) {
+            if (index === games[key].length-1) {
                 while (j < num_games) {
                     o.push(game.after)
                     j++
@@ -96,7 +95,7 @@ export const generateGraph = async (id, nickname, count = 30) => {
 export const getUserGraphData = async (id, count) => {
     let matches = await getUserMatchHistory(id)
 
-    if (!matches || matches.length == 0) {
+    if (!matches || matches.length === 0) {
         return null
     }
 
@@ -118,7 +117,7 @@ export const getUserGraphData = async (id, count) => {
     })
 
     games = games.reduce((out, game, index) => {
-		let player = game.players.find(element => element.id == id)
+		let player = game.players.find(element => element.id === id)
 		return [...out, {id: index, role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
 	}, [])
 
@@ -128,7 +127,7 @@ export const getUserGraphData = async (id, count) => {
 
 
     data = data.map(role => {
-        if (role.length == 0) {
+        if (role.length === 0) {
             return role
         }
         let i = 0
@@ -139,7 +138,7 @@ export const getUserGraphData = async (id, count) => {
             }
             out.push(game.after)
             i++
-            if (index == role.length-1) {
+            if (index === role.length-1) {
                 while (i < num_games) {
                     out.push(game.after)
                     i++
@@ -204,7 +203,7 @@ const createGraph = async (title, labels, legend, data) => {
     for (let i=0;i<count;i++) {
         let selected_colour = null
 
-        if (available.length == 0) {
+        if (available.length === 0) {
             available = [yellows, reds, blues, purples, greens, greys]
         }
 
@@ -212,7 +211,7 @@ const createGraph = async (title, labels, legend, data) => {
             let index = Math.floor(Math.random() * available.length)
             selected_colour = available[index]
             available.splice(index, 1)
-        } while (selected_colour.length == 0)
+        } while (selected_colour.length === 0)
 
         colours.push(selected_colour[0])
 
