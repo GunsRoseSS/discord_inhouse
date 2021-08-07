@@ -240,7 +240,7 @@ export const convertMatchHistoryToEmbed = (name, historyData) => {
     })
 
     historyData.champions = historyData.champions.map(champ => {
-        return champ.split(/(?=[A-Z])/).join(" ")
+        return getChampionName(champ)
     })
 
     let links = historyData.matches.map(match => {
