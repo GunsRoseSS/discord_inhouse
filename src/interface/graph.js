@@ -87,7 +87,7 @@ export const generateRoleGraph = async (role, userList, count = parseInt(process
  * @param {Number} count The number of games to display
  * @returns {String} The file name of the generated graph
  */
-export const generateGraph = async (id, nickname, count = 30) => {
+export const generateGraph = async (id, nickname, count = parseInt(process.env.GRAPH_GAMES_AMOUNT)) => {
     let data = await getUserGraphData(id)
 
     if (data === undefined) {

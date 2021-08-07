@@ -40,26 +40,11 @@ export const createGame = async (id, game, champs, winner) => {
             user.matchHistory.push(newGame._id)
             user.roles[player.role].mmr = player.afterGameElo
 
-            let location = -1
-            for (let i = 0; i < user.championStats.length; i++) {
-                if (user.championStats[i].name === player.champion) {
-                    location = i
-                    break
-                }
-            }
-
-            if (location === -1) {
-                location = user.championStats.length
-                user.championStats.push({name: player.champion, mmrDiff: 0, wins: 0, losses: 0})
-            }
-
             if (player.team === winner) {
                 user.roles[player.role].wins += 1
-                user.championStats[location].wins += 1
 
             } else {
                 user.roles[player.role].losses += 1
-                user.championStats[location].losses += 1
             }
 
             user.championStats[location].mmrDiff += Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
@@ -70,7 +55,8 @@ export const createGame = async (id, game, champs, winner) => {
 
         return newGame
     } catch (err) {
-        console.log(`Error while adding match ${game.id} to database. Possible duplicate entry`)
+        console.log(`Error while adding match ${id} to database. Possible duplicate entry`)
+        console.log(err)
         return null
     }
 
@@ -562,7 +548,6 @@ export const getGameStats = (matchID) => {
             callback.on('end', function () {
                 response = JSON.parse(body);
                 if (response !== {}) {
-                    console.log(response);
                     resolve(response);
                 } else {
                     reject('no data returned');
