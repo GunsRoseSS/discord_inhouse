@@ -373,7 +373,7 @@ client.on("message", async (message) => {
                                     pages: await getRoleRankEmbed(role[0])
                                 }).send(message.channel, message.author.id)
                             } else {
-                                message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
+                                message.channel.send('You dont even kno how too spel championes corectely? Haha stoopid!')
                             }
                         }
                     }
@@ -685,7 +685,6 @@ client.on("message", async (message) => {
                 break
             default:
                 message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
-                message.channel.send({files: ['https://cdn.discordapp.com/attachments/863014796915638296/869315149738172506/kiwihelp.jpg']});
         }
     }
 })
