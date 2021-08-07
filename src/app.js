@@ -373,7 +373,7 @@ client.on("message", async (message) => {
                                     pages: await getRoleRankEmbed(role[0])
                                 }).send(message.channel, message.author.id)
                             } else {
-                                message.channel.send('You dont even kno how too spel championes corectely? Haha stoopid!')
+                                message.channel.send('You dont even kno how too spel roles corectely? Haha stoopid!')
                             }
                         }
                     }
