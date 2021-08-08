@@ -565,7 +565,7 @@ export async function insertGameStats(matchID) {
     let stats;
     let game = await getGameByMatchID(matchID);
 
-    getGameStats(matchID).then(response => {
+    await getGameStats(matchID).then(response => {
         stats = response
 
         return new Promise((resolve, reject) => {
