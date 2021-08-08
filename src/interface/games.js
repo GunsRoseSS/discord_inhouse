@@ -897,17 +897,21 @@ export const getHallOfFameStats = async (userList, champion) => {
 
     //calculating averages again
     Object.keys(stats).forEach(player => {
+        let enoughGames = true;
+        if (stats[player].divideBy < 3){
+            enoughGames = false;
+        }
         for (let stat of statList) {
             if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
-                stats[player][`avg_${stat}`] = Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10; //provides one decimal, useful for lower number stats
+                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10 : 0; //provides one decimal, useful for lower number stats
             } else {
-                stats[player][`avg_${stat}`] = Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy);
+                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy) : 0;
             }
         }
-        stats[player].first = Math.round(stats[player].first / stats[player].divideBy * 1000) / 10;
-        stats[player].avg_kp = Math.round(stats[player].avg_kp / stats[player].divideBy * 10) / 10;
-        stats[player].avg_dmgshare = Math.round(stats[player].avg_dmgshare / stats[player].divideBy * 10) / 10;
-        stats[player].avg_kda = Math.round((stats[player].avg_kills + stats[player].avg_assists) / stats[player].avg_deaths * 100) / 100;
+        stats[player].first = enoughGames ? Math.round(stats[player].first / stats[player].divideBy * 1000) / 10 : 0;
+        stats[player].avg_kp = enoughGames ? Math.round(stats[player].avg_kp / stats[player].divideBy * 10) / 10 : 0;
+        stats[player].avg_dmgshare = enoughGames ? Math.round(stats[player].avg_dmgshare / stats[player].divideBy * 10) / 10 : 0;
+        stats[player].avg_kda = enoughGames ? Math.round((stats[player].avg_kills + stats[player].avg_assists) / stats[player].avg_deaths * 100) / 100 : 0;
     })
 
     //in this part the best of the best is selected.
@@ -985,7 +989,7 @@ export const getHallOfFameStats = async (userList, champion) => {
     //possible improvement would be to remove the - champion tag when requesting !hof [champion]
     return {
         title: title,
-        description: "Type **!stats** or **!hof [@player]** to see the personal stats of yourself or another [@player].",
+        description: "Type **!stats** or **!hof [@player]** to see the personal stats of yourself or another [@player].\nNote: Average Hall of Fame stats require at least 3 games played",
         pages: [
             {
                 fields: [
