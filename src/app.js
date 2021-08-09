@@ -57,6 +57,8 @@ let winner = null
 let champs = {}
 let userList = undefined;
 
+let champion;
+
 client.on("ready", async() => {
     console.log("Bot started, fetching guild members")
     userList = await fetchGuildMemberNicknames(client);
@@ -666,7 +668,7 @@ client.on("message", async (message) => {
                 if (args.length === 0){
                     stats = await getHallOfFameStats(userList);
                 } else {
-                    let champion = formatChampions([args[0]]);
+                    champion = formatChampions([args[0]]);
                     if (champion.length === 0){
                         message.channel.send("My 8 year old son can spell champion names better than you. Yes, I adopted him.")
                         break
@@ -801,5 +803,13 @@ export const btnDeclineWinClick = (embed, button) => {
             embed.init(getMatchEndMessageEmbed(initiator, winner, player_states))
         }
     }
+}
+
+export const getUserList = () => {
+    return userList
+}
+
+export const getChampion = () => {
+    return champion
 }
 

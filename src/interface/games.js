@@ -13,6 +13,7 @@ import {createEmbed} from "./embed.js";
 import https from "https";
 import {getMemberNickname} from "../helpers/discord.js";
 import {fetchChampionIcon} from "./champion.js";
+import {getChampion, getUserList} from "../app.js";
 
 /**
  * @description Creates and stores the game within the database
@@ -761,7 +762,7 @@ export const getPlayerStatsEmbed = (playerID, userList, stats) => {
 }
 
 //slightly different function for !hof
-export const getHallOfFameStats = async (userList, champion) => {
+export const getHallOfFameStats = async (userList, best, champion) => {
     let statList = ['kills', 'deaths', 'assists', 'cs', 'gold', 'spree', 'champ_dmg_total', 'objective_dmg', 'turret_dmg', 'healed_dmg', 'taken_dmg_total', 'wards_placed', 'control_wards'];
     let games = await getAllGames();
     let fullStats = {};
@@ -769,9 +770,9 @@ export const getHallOfFameStats = async (userList, champion) => {
     let title;
 
     if (champion) {
-        title = `:hushed: Hall of Fame: The best player of each statistic of ${getChampionName(champion)}! :hushed:`;
+        title = `:hushed: Hall of ${best ? "Fame" : "Shame"}: The ${best ? "best" : "worst"} player of each statistic of ${getChampionName(champion)}! :hushed:`;
     } else {
-        title = `:hushed: Hall of Fame: The best player of each statistic! :hushed:`;
+        title = `:hushed: Hall of ${best ? "Fame" : "Shame"}: The ${best ? "best" : "worst"} player of each statistic! :hushed:`;
     }
 
     //instead of looking at user match history for each user, it takes all games in the db and dynamically calculates the statistics for each user per game.
@@ -817,7 +818,12 @@ export const getHallOfFameStats = async (userList, champion) => {
                 if (statsEntered) {
                     for (let stat of statList) {
                         if (user.stats[`${stat}`] !== '-') {
-                            stats[user.id][`avg_${stat}`] += parseInt(user.stats[`${stat}`]);
+                            if (stat === "cs") {
+                                stats[user.id][`avg_${stat}`] += parseInt(user.stats[`${stat}`]) / game.duration
+                            } else {
+                                stats[user.id][`avg_${stat}`] += parseInt(user.stats[`${stat}`]);
+                            }
+
                             if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
                                 if (stats[user.id][`best_${stat}`].int < parseInt(user.stats[`${stat}`])) {
                                     stats[user.id][`best_${stat}`].int = parseInt(user.stats[`${stat}`]);
@@ -826,6 +832,12 @@ export const getHallOfFameStats = async (userList, champion) => {
                             }
                         }
                     }
+
+                    if (stats[user.id][`best_cpm`].int < parseInt(user.stats[`cs`]) / game.duration) {
+                        stats[user.id][`best_cpm`].int = (parseInt(user.stats[`cs`]) / game.duration).toFixed(1);
+                        stats[user.id][`best_cpm`].champion = user.champion
+                    }
+
                     stats[user.id].first += user.stats.first ? 1 : 0;
                     if (stats[user.id][`best_multi`].int < parseInt(user.stats.multi)) {
                         stats[user.id][`best_multi`].int = parseInt(user.stats.multi);
@@ -861,11 +873,24 @@ export const getHallOfFameStats = async (userList, champion) => {
                 };
                 if (statsEntered) {
                     for (let stat of statList) {
-                        stats[user.id][`best_${stat}`] = {
-                            int: parseInt(user.stats[`${stat}`]),
-                            champion: user.champion
-                        };
-                        stats[user.id][`avg_${stat}`] = parseInt(user.stats[`${stat}`]);
+                        if (stat === "cs") {
+                            stats[user.id][`avg_${stat}`] = parseInt(user.stats[`${stat}`]) / game.duration
+                            stats[user.id][`best_${stat}`] = {
+                                int: parseInt(user.stats[`${stat}`]),
+                                champion: user.champion
+                            }
+                            stats[user.id][`best_cpm`] = {
+                                int: parseInt(user.stats[`${stat}`]) / game.duration,
+                                champion: user.champion
+                            }
+                        } else {
+                            stats[user.id][`best_${stat}`] = {
+                                int: parseInt(user.stats[`${stat}`]),
+                                champion: user.champion
+                            };
+                            stats[user.id][`avg_${stat}`] = parseInt(user.stats[`${stat}`]);
+                        }
+
                     }
                     stats[user.id].first = user.stats.first ? 1 : 0;
                     stats[user.id][`best_multi`] = {
@@ -903,9 +928,9 @@ export const getHallOfFameStats = async (userList, champion) => {
         }
         for (let stat of statList) {
             if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
-                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10 : 0; //provides one decimal, useful for lower number stats
+                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10: 0; //provides one decimal, useful for lower number stats
             } else {
-                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy) : 0;
+                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy): 0;
             }
         }
         stats[player].first = enoughGames ? Math.round(stats[player].first / stats[player].divideBy * 1000) / 10 : 0;
@@ -919,7 +944,7 @@ export const getHallOfFameStats = async (userList, champion) => {
         if (Object.entries(fullStats).length !== 0) {
             Object.entries(stats[player]).forEach(([key, value]) => { //initialize string if its empty
                 if (key !== 'divideBy' && key !== 'avg_kills' && key !== 'avg_deaths' && key !== 'avg_assists' && key !== 'best_kda' && key !== 'avg_kda' && !key.startsWith('best')) {
-                    if (value > fullStats[key].stat) {
+                    if (best ? value > fullStats[key].stat : value < fullStats[key].stat) {
                         fullStats[key] = {
                             id: player,
                             stat: value
@@ -927,7 +952,7 @@ export const getHallOfFameStats = async (userList, champion) => {
                     }
                 }
                 if (key.startsWith('best') && key !== 'best_kda') {
-                    if (value.int > fullStats[key].stat.int) {
+                    if (best ? value.int > fullStats[key].stat.int : value.int < fullStats[key].stat.int) {
                         fullStats[key] = {
                             id: player,
                             stat: value
@@ -935,7 +960,7 @@ export const getHallOfFameStats = async (userList, champion) => {
                     }
                 }
                 if (key === 'avg_kda') {
-                    if (value > fullStats.avg_kda.stat.calc) {
+                    if (best ? value > fullStats.avg_kda.stat.calc : value < fullStats.avg_kda.stat.calc) {
                         fullStats.avg_kda = {
                             id: player,
                             stat: {
@@ -948,7 +973,7 @@ export const getHallOfFameStats = async (userList, champion) => {
                     }
                 }
                 if (key === 'best_kda') {
-                    if (value.calc > fullStats.best_kda.stat.calc) {
+                    if (best ? value.calc > fullStats.best_kda.stat.calc : value.calc < fullStats.best_kda.stat.calc) {
                         fullStats.best_kda = {
                             id: player,
                             stat: {
@@ -1004,18 +1029,18 @@ export const getHallOfFameStats = async (userList, champion) => {
                         inline: true
                     },
                     {
-                        name: "Average(Best) K/D/A",
+                        name: `Average(${best ? "best" : "worst"}) K/D/A`,
                         value: `:bar_chart: ${fullStats.avg_kda.stat.kills}/${fullStats.avg_kda.stat.deaths}/${fullStats.avg_kda.stat.assists} [${fullStats.avg_kda.stat.calc}] :crown: <@${fullStats.avg_kda.id}> \n:first_place: (${fullStats.best_kda.stat.kills}/${fullStats.best_kda.stat.deaths}/${fullStats.best_kda.stat.assists} [${fullStats.best_kda.stat.calc}]) :crown: <@${fullStats.best_kda.id}>`,
                         inline: false
                     },
                     {
-                        name: "Average(Best) Kill participation/Damage share %",
+                        name: `Average(${best ? "best" : "worst"}) Kill participation/Damage share %`,
                         value: `:raised_hands: :bar_chart: ${fullStats.avg_kp.stat}% :crown: <@${fullStats.avg_kp.id}>\n :raised_hands: :first_place: (${fullStats.best_kp.stat.int}%) :crown: <@${fullStats.best_kp.id}> - ${getChampionName(fullStats.best_kp.stat.champion)}\n:boom: :bar_chart: ${fullStats.avg_dmgshare.stat}% :crown: <@${fullStats.avg_dmgshare.id}>\n:boom: :first_place: (${fullStats.best_dmgshare.stat.int}%) :crown: <@${fullStats.best_dmgshare.id}> - ${getChampionName(fullStats.best_dmgshare.stat.champion)}`,
                         inline: false
                     },
                     {
-                        name: "Average(Best) CS/Gold earned",
-                        value: `:crossed_swords: :bar_chart: ${fullStats.avg_cs.stat} :crown: <@${fullStats.avg_cs.id}>\n :crossed_swords: :first_place: (${fullStats.best_cs.stat.int}) :crown: <@${fullStats.best_cs.id}> - ${getChampionName(fullStats.best_cs.stat.champion)}\n:coin: :bar_chart: ${fullStats.avg_gold.stat} :crown: <@${fullStats.avg_gold.id}>\n :coin: :first_place: (${fullStats.best_gold.stat.int}) :crown: <@${fullStats.best_gold.id}> - ${getChampionName(fullStats.best_gold.stat.champion)}`,
+                        name: `Average(${best ? "best" : "worst"}) CS/m / Best CS / Gold earned`,
+                        value: `:crossed_swords: :bar_chart: ${fullStats.avg_cs.stat} :crown: <@${fullStats.avg_cs.id}>\n :crossed_swords: :first_place: (${fullStats.best_cpm.stat.int}) :crown: <@${fullStats.best_cpm.id}> - ${fullStats.best_cpm.stat.champion} \n :farmer: :first_place: (${fullStats.best_cs.stat.int}) :crown: <@${fullStats.best_cs.id}> - ${getChampionName(fullStats.best_cs.stat.champion)}\n:coin: :bar_chart: ${fullStats.avg_gold.stat} :crown: <@${fullStats.avg_gold.id}>\n :coin: :first_place: (${fullStats.best_gold.stat.int}) :crown: <@${fullStats.best_gold.id}> - ${getChampionName(fullStats.best_gold.stat.champion)}`,
                         inline: false
                     }
                 ]
@@ -1023,17 +1048,17 @@ export const getHallOfFameStats = async (userList, champion) => {
             {
                 fields: [
                     {
-                        name: "Average(Best) Damage dealt to champions/ objectives/turrets",
+                        name: `Average(${best ? "best" : "worst"}) Damage dealt to champions/ objectives/turrets`,
                         value: `:monkey_face: :bar_chart: ${fullStats.avg_champ_dmg_total.stat} :crown: <@${fullStats.avg_champ_dmg_total.id}>\n :monkey_face: :first_place:(${fullStats.best_champ_dmg_total.stat.int}) :crown: <@${fullStats.best_champ_dmg_total.id}> - ${getChampionName(fullStats.best_champ_dmg_total.stat.champion)}\n:dragon_face: :bar_chart: ${fullStats.avg_objective_dmg.stat} :crown: <@${fullStats.avg_objective_dmg.id}>\n :dragon_face: :first_place: (${fullStats.best_objective_dmg.stat.int}) :crown: <@${fullStats.best_objective_dmg.id}> - ${getChampionName(fullStats.best_objective_dmg.stat.champion)}\n:tokyo_tower: :bar_chart: ${fullStats.avg_turret_dmg.stat} :crown: <@${fullStats.avg_turret_dmg.id}>\n :tokyo_tower: :first_place: (${fullStats.best_turret_dmg.stat.int}) :crown: <@${fullStats.best_turret_dmg.id}> - ${getChampionName(fullStats.best_turret_dmg.stat.champion)}`,
                         inline: false
                     },
                     {
-                        name: "Average(Best) Damage taken/healed",
+                        name: `Average(${best ? "best" : "worst"}) Damage taken/healed`,
                         value: `:shield: :bar_chart: ${fullStats.avg_taken_dmg_total.stat} :crown: <@${fullStats.avg_taken_dmg_total.id}>\n :shield: :first_place: (${fullStats.best_taken_dmg_total.stat.int}) :crown: <@${fullStats.best_taken_dmg_total.id}> - ${getChampionName(fullStats.best_taken_dmg_total.stat.champion)}\n:ambulance: :bar_chart: ${fullStats.avg_healed_dmg.stat} :crown: <@${fullStats.avg_healed_dmg.id}>\n :ambulance: :first_place: (${fullStats.best_healed_dmg.stat.int}) :crown: <@${fullStats.best_healed_dmg.id}> - ${getChampionName(fullStats.best_healed_dmg.stat.champion)}`,
                         inline: false
                     },
                     {
-                        name: "Average(Best) Wards/Control wards placed",
+                        name: `Average(${best ? "best" : "worst"}) Wards/Control wards placed`,
                         value: champion ? `Unfortunately these stats are not available for specific champions.` : `:flashlight: :bar_chart: ${fullStats.avg_wards_placed.stat} :crown: <@${fullStats.avg_wards_placed.id}>\n :flashlight: :first_place: (${fullStats.best_wards_placed.stat.int}) :crown: <@${fullStats.best_wards_placed.id}> - ${getChampionName(fullStats.best_wards_placed.stat.champion)}\n:eye: :bar_chart: ${fullStats.avg_control_wards.stat} :crown: <@${fullStats.avg_control_wards.id}>\n :eye: :first_place: (${fullStats.best_control_wards.stat.int}) :crown: <@${fullStats.best_control_wards.id}> - ${getChampionName(fullStats.best_control_wards.stat.champion)}`,
                         inline: false
                     },
@@ -1046,7 +1071,21 @@ export const getHallOfFameStats = async (userList, champion) => {
             }
         ],
         thumbnail: champion ? fetchChampionIcon(champion) : "",
-        footer: ""
+        footer: "",
+        menu: {
+            hint: "Sort by...",
+            callback: HOFMenuSort,
+            options: [
+                {label: "Hall of Fame", description: "The best of every stat", value: true},
+                {label: "Hall of Shame", description: "The worst of every stat", value: false},
+            ]
+        }
     }
 }
-//we made 1000 lines woooooo!
+async function HOFMenuSort(embed, menuValue) {
+    let data;
+    data = await getHallOfFameStats(getUserList(), menuValue === 'true', getChampion()); //this is the most horrible roundabout way but it only works this way for now. Maybe implement extra variables to insert in the menusort?
+    embed.current_page = 0
+    embed.init(data)
+    embed.update()
+}
