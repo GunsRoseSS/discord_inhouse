@@ -825,7 +825,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
                             }
 
                             if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
-                                if (stats[user.id][`best_${stat}`].int < parseInt(user.stats[`${stat}`])) {
+                                if (best ? stats[user.id][`best_${stat}`].int < parseInt(user.stats[`${stat}`]) : stats[user.id][`best_${stat}`].int > parseInt(user.stats[`${stat}`])) {
                                     stats[user.id][`best_${stat}`].int = parseInt(user.stats[`${stat}`]);
                                     stats[user.id][`best_${stat}`].champion = user.champion;
                                 }
@@ -833,29 +833,29 @@ export const getHallOfFameStats = async (userList, best, champion) => {
                         }
                     }
 
-                    if (stats[user.id][`best_cpm`].int < parseInt(user.stats[`cs`]) / game.duration) {
+                    if (best ? stats[user.id][`best_cpm`].int < parseInt(user.stats[`cs`]) / game.duration : stats[user.id][`best_cpm`].int > parseInt(user.stats[`cs`]) / game.duration) {
                         stats[user.id][`best_cpm`].int = (parseInt(user.stats[`cs`]) / game.duration).toFixed(1);
                         stats[user.id][`best_cpm`].champion = user.champion
                     }
 
                     stats[user.id].first += user.stats.first ? 1 : 0;
-                    if (stats[user.id][`best_multi`].int < parseInt(user.stats.multi)) {
+                    if (best ? stats[user.id][`best_multi`].int < parseInt(user.stats.multi) : stats[user.id][`best_multi`].int > parseInt(user.stats.multi)) {
                         stats[user.id][`best_multi`].int = parseInt(user.stats.multi);
                         stats[user.id][`best_multi`].champion = user.champion;
                     }
                     stats[user.id].divideBy += 1;
-                    if (stats[user.id].best_kp.int < Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10) {
+                    if (best ? stats[user.id].best_kp.int < Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10 : stats[user.id].best_kp.int > Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10) {
                         stats[user.id].best_kp.int = Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10;
                         stats[user.id].best_kp.champion = user.champion;
                     }
                     stats[user.id].avg_kp += Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / totalKills[user.team] * 1000) / 10;
-                    if (stats[user.id].best_dmgshare.int < Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10) {
+                    if (best ? stats[user.id].best_dmgshare.int < Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10 : stats[user.id].best_dmgshare.int > Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10) {
                         stats[user.id].best_dmgshare.int = Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10;
                         stats[user.id].best_dmgshare.champion = user.champion;
                     }
                     stats[user.id].avg_dmgshare += Math.round(user.stats.champ_dmg_total / totalDmg[user.team] * 1000) / 10;
 
-                    if (stats[user.id].best_kda.calc < Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100) {
+                    if (best ? stats[user.id].best_kda.calc < Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100 : stats[user.id].best_kda.calc > Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100) {
                         stats[user.id].best_kda = {
                             calc: Math.round((parseInt(user.stats.kills) + parseInt(user.stats.assists)) / parseInt(user.stats.deaths) * 100) / 100,
                             kills: (parseInt(user.stats.kills)),
@@ -928,15 +928,15 @@ export const getHallOfFameStats = async (userList, best, champion) => {
         }
         for (let stat of statList) {
             if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree' || stat === 'wards_placed' || stat === 'control_wards') {
-                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10: 0; //provides one decimal, useful for lower number stats
+                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] * 10 / stats[player].divideBy) / 10: -1; //provides one decimal, useful for lower number stats
             } else {
-                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy): 0;
+                stats[player][`avg_${stat}`] = enoughGames ? Math.round(stats[player][`avg_${stat}`] / stats[player].divideBy): -1;
             }
         }
-        stats[player].first = enoughGames ? Math.round(stats[player].first / stats[player].divideBy * 1000) / 10 : 0;
-        stats[player].avg_kp = enoughGames ? Math.round(stats[player].avg_kp / stats[player].divideBy * 10) / 10 : 0;
-        stats[player].avg_dmgshare = enoughGames ? Math.round(stats[player].avg_dmgshare / stats[player].divideBy * 10) / 10 : 0;
-        stats[player].avg_kda = enoughGames ? Math.round((stats[player].avg_kills + stats[player].avg_assists) / stats[player].avg_deaths * 100) / 100 : 0;
+        stats[player].first = enoughGames ? Math.round(stats[player].first / stats[player].divideBy * 1000) / 10 : -1;
+        stats[player].avg_kp = enoughGames ? Math.round(stats[player].avg_kp / stats[player].divideBy * 10) / 10 : -1;
+        stats[player].avg_dmgshare = enoughGames ? Math.round(stats[player].avg_dmgshare / stats[player].divideBy * 10) / 10 : -1;
+        stats[player].avg_kda = enoughGames ? Math.round((stats[player].avg_kills + stats[player].avg_assists) / stats[player].avg_deaths * 100) / 100 : -1;
     })
 
     //in this part the best of the best is selected.
@@ -944,7 +944,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
         if (Object.entries(fullStats).length !== 0) {
             Object.entries(stats[player]).forEach(([key, value]) => { //initialize string if its empty
                 if (key !== 'divideBy' && key !== 'avg_kills' && key !== 'avg_deaths' && key !== 'avg_assists' && key !== 'best_kda' && key !== 'avg_kda' && !key.startsWith('best')) {
-                    if (best ? value > fullStats[key].stat : value < fullStats[key].stat) {
+                    if (best ? value > fullStats[key].stat : value < fullStats[key].stat && value >= 0) {
                         fullStats[key] = {
                             id: player,
                             stat: value
@@ -952,7 +952,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
                     }
                 }
                 if (key.startsWith('best') && key !== 'best_kda') {
-                    if (best ? value.int > fullStats[key].stat.int : value.int < fullStats[key].stat.int) {
+                    if (best ? value.int > fullStats[key].stat.int : value.int < fullStats[key].stat.int && value.int >= 0) {
                         fullStats[key] = {
                             id: player,
                             stat: value
@@ -960,7 +960,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
                     }
                 }
                 if (key === 'avg_kda') {
-                    if (best ? value > fullStats.avg_kda.stat.calc : value < fullStats.avg_kda.stat.calc) {
+                    if (best ? value > fullStats.avg_kda.stat.calc : value < fullStats.avg_kda.stat.calc && value >= 0) {
                         fullStats.avg_kda = {
                             id: player,
                             stat: {
@@ -973,7 +973,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
                     }
                 }
                 if (key === 'best_kda') {
-                    if (best ? value.calc > fullStats.best_kda.stat.calc : value.calc < fullStats.best_kda.stat.calc) {
+                    if (best ? value.calc > fullStats.best_kda.stat.calc : value.calc < fullStats.best_kda.stat.calc && value.calc >= 0) {
                         fullStats.best_kda = {
                             id: player,
                             stat: {
