@@ -944,7 +944,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
         if (Object.entries(fullStats).length !== 0) {
             Object.entries(stats[player]).forEach(([key, value]) => { //initialize string if its empty
                 if (key !== 'divideBy' && key !== 'avg_kills' && key !== 'avg_deaths' && key !== 'avg_assists' && key !== 'best_kda' && key !== 'avg_kda' && !key.startsWith('best')) {
-                    if (best ? value > fullStats[key].stat : value < fullStats[key].stat && value >= 0) {
+                    if (best ? value > fullStats[key].stat : value < fullStats[key].stat) {
                         fullStats[key] = {
                             id: player,
                             stat: value
