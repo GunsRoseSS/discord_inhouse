@@ -72,6 +72,7 @@ This discord inhouse bot was made for small communities. This means that the bot
 
 ```javascript
 {
+  duration: 36.06666666666667,  
   bans: [ // all the bans of the game
     'Pyke',     'Gwen',
     'Riven',    'Skarner',
