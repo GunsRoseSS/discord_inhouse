@@ -37,7 +37,8 @@ const gameSchema = mongoose.Schema({
     }],
     winner: String,
     date: Date,
-    bans: [String]
+    bans: [String],
+    statsFetched: Boolean
 })
 
 const Game = mongoose.model("Game", gameSchema)

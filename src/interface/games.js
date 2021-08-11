@@ -17,7 +17,7 @@ import {getChampion, getUserList} from "../app.js";
 
 /**
  * @description Creates and stores the game within the database
- * @param {Number} id The id of the game. MUST BE UNIQUE (Used as key for document in db) 
+ * @param {Number} id The id of the game. MUST BE UNIQUE (Used as key for document in db)
  * @param game The game data
  * @param champs An object containing the champions
  * @param {String} winner Either BLUE or RED
@@ -30,7 +30,8 @@ export const createGame = async (id, game, champs, winner) => {
             matchID: 0,
             players: await convertToPlayerList(game, champs, winner),
             winner: winner,
-            date: new Date().setUTCHours(0, 0, 0, 0)
+            date: new Date().setUTCHours(0, 0, 0, 0),
+            statsFetched: false
         })
 
         await newGame.save()
@@ -47,9 +48,6 @@ export const createGame = async (id, game, champs, winner) => {
             } else {
                 user.roles[player.role].losses += 1
             }
-
-            user.championStats[location].mmrDiff += Math.floor(ordinal(player.afterGameElo) - ordinal(player.previousElo))
-
 
             await user.save()
         }
@@ -276,8 +274,8 @@ export const paginateHistoryEmbed = (historyData, links) => {
         }
         let counter = 0;
         //check if the page is full or the match array is empty
-        while (historyData.matches.length !== 0 && counter < (parseInt(process.env.EMBED_PAGE_LENGTH) / 2)) {
-            let embedNumber = loopCounter * (parseInt(process.env.EMBED_PAGE_LENGTH) / 2) + counter + 1
+        while (historyData.matches.length !== 0 && counter < 5) {
+            let embedNumber = loopCounter * 5 + counter + 1
             //push stuff into subarray that will become a page
             subList.matches.push(emojiNumberSelector(embedNumber) + ': ' + historyData.matches[0]);
             subList.dates.push(historyData.dates[0]);
@@ -414,7 +412,7 @@ export const getMetaEmbed = (games, type) => {
     dictChamps = sortMetaData(dictChamps, type); //sort
 
     let pages = [];
-    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
+    const PAGE_SIZE = 10;
     let pickRate_msg = "";
     let champ_msg = "";
     let mmr_msg = "";
@@ -571,6 +569,7 @@ export async function insertGameStats(matchID) {
 
         return new Promise((resolve, reject) => {
             game.bans = stats.bans;
+            game.duration = stats.duration;
             for (let player of game.players) {
                 let champStats = stats.players.find(element => element.champion === player.champion);
                 if (!champStats) {
@@ -609,7 +608,7 @@ export const getPlayerStats = async (playerID, userList) => {
         let win = game.winner === player.team;
 
         let statsEntered = false;
-        if (game.bans.length > 0) {
+        if (game.statsFetched) {
             statsEntered = true;
         }
 
@@ -631,7 +630,12 @@ export const getPlayerStats = async (playerID, userList) => {
             if (statsEntered) {
                 for (let stat of statList) {
                     if (player.stats[`${stat}`] !== '-') {
-                        stats[`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
+                        if (stat === "cs") {
+                            stats[`avg_${stat}`] += parseInt(player.stats[`${stat}`]) / game.duration
+                        } else {
+                            stats[`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
+                        }
+
                         if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
                             if (stats[`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
                                 stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
@@ -639,6 +643,12 @@ export const getPlayerStats = async (playerID, userList) => {
                         }
                     }
                 }
+
+
+                if (stats[`best_cpm`] < parseInt(player.stats[`cs`]) / game.duration) {
+                    stats[`best_cpm`] = (parseInt(player.stats[`cs`]) / game.duration).toFixed(1);
+                }
+
                 stats.first += player.stats.first ? 1 : 0;
                 if (stats[`best_multi`] < parseInt(player.stats.multi)) {
                     stats[`best_multi`] = parseInt(player.stats.multi);
@@ -670,8 +680,14 @@ export const getPlayerStats = async (playerID, userList) => {
             };
             if (statsEntered) {
                 for (let stat of statList) {
-                    stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
-                    stats[`avg_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    if (stat === "cs") {
+                        stats[`avg_${stat}`] = parseInt(player.stats[`${stat}`]) / game.duration
+                        stats[`best_${stat}`] = parseInt(player.stats[`${stat}`])
+                        stats[`best_cpm`] = parseInt(player.stats[`${stat}`]) / game.duration
+                    } else {
+                        stats[`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                        stats[`avg_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    }
                 }
                 stats.first = player.stats.first ? 1 : 0;
                 stats[`best_multi`] = player.stats.multi;
@@ -733,8 +749,8 @@ export const getPlayerStatsEmbed = (playerID, userList, stats) => {
                 inline: true
             },
             {
-                name: "Average(Best) CS/Gold earned",
-                value: `:crossed_swords: ${stats.avg_cs}(${stats.best_cs})/\n:coin: ${stats.avg_gold}(${stats.best_gold})`,
+                name: "Average(Best) CS/m /Best total CS/Gold earned",
+                value: `:crossed_swords: ${stats.avg_cs}/(${stats.best_cpm}) \n :farmer: ${stats.best_cs} \n:coin: ${stats.avg_gold}(${stats.best_gold})`,
                 inline: true
             },
             {
@@ -778,7 +794,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
     //instead of looking at user match history for each user, it takes all games in the db and dynamically calculates the statistics for each user per game.
     for (let game of games) {
         let statsEntered = false;
-        if (game.bans.length > 0) {
+        if (game.statsFetched) {
             statsEntered = true;
         }
 
@@ -1073,7 +1089,7 @@ export const getHallOfFameStats = async (userList, best, champion) => {
         thumbnail: champion ? fetchChampionIcon(champion) : "",
         footer: "",
         menu: {
-            hint: "Sort by...",
+            hint: "Select type...",
             callback: HOFMenuSort,
             options: [
                 {label: "Hall of Fame", description: "The best of every stat", value: true},

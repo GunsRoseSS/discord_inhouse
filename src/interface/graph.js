@@ -8,12 +8,12 @@ import { ordinal } from "openskill"
 
 /**
  * @description Creates a graph of mmr variation for users in a role
- * @param {String} role Name of the role 
+ * @param {String} role Name of the role
  * @param {[String]} userList List of guild users
  * @param {Number} count Amount of games to include in graph
  * @returns {String} The name of the file the graph has been saved to
  */
-export const generateRoleGraph = async (role, userList, count = parseInt(process.env.GRAPH_GAMES_AMOUNT)) => {
+export const generateRoleGraph = async (role, userList, count = 30) => {
     let games = await Game.find();
 
     if (!games){
@@ -87,7 +87,7 @@ export const generateRoleGraph = async (role, userList, count = parseInt(process
  * @param {Number} count The number of games to display
  * @returns {String} The file name of the generated graph
  */
-export const generateGraph = async (id, nickname, count = parseInt(process.env.GRAPH_GAMES_AMOUNT)) => {
+export const generateGraph = async (id, nickname, count = 30) => {
     let data = await getUserGraphData(id)
 
     if (data === undefined) {
@@ -115,8 +115,8 @@ export const getUserGraphData = async (id, count) => {
     }
 
     matches = matches.slice(Math.max(matches.length - count, 0)).reduce((out, match) => {
-		return [...out,{_id: match}]
-	}, [])
+        return [...out,{_id: match}]
+    }, [])
 
     let games = await Game.find({$or : matches})
 
@@ -132,9 +132,9 @@ export const getUserGraphData = async (id, count) => {
     })
 
     games = games.reduce((out, game, index) => {
-		let player = game.players.find(element => element.id === id)
-		return [...out, {id: index, role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
-	}, [])
+        let player = game.players.find(element => element.id === id)
+        return [...out, {id: index, role: player.role, previousElo: ordinal(player.previousElo), afterGameElo: ordinal(player.afterGameElo)}]
+    }, [])
 
     let num_games = games.length
 
@@ -185,7 +185,7 @@ const createGraph = async (title, labels, legend, data) => {
     //F6BD60 = Maximum yellow red
     //faed00 = yellow
     //e5fa00 = ogre
-    
+
     //ff6456 = orange/red
     //A02D23 = Cinnabar (orange-red)
     //d90429 = amaranth red
@@ -247,7 +247,7 @@ const createGraph = async (title, labels, legend, data) => {
     let formattedData = legend.map((name, i) => {
         minValue = Math.min(minValue, Math.min(...data[i]))
         maxValue = Math.max(maxValue, Math.max(...data[i]))
-        return {"label": name, "borderColor": colours[i % colours.length], "backgroundColor": colours[i % colours.length], "fill": false, "data": data[i]}
+        return {"label": name, "borderColor": colours[i % colours.length], "backgroundColor": colours[i % colours.length], "fill": false, "data": data[i].map(i => i = Math.floor(i))}
     })
 
     const line_chart = ChartJSImage().chart({
@@ -260,7 +260,7 @@ const createGraph = async (title, labels, legend, data) => {
             "legend": {
                 "labels": {
                     "fontColor": textColour
-                }  
+                }
             },
             "title": {"display": true,"text": title, "fontColor": textColour},
             "scales": {
@@ -295,11 +295,11 @@ const createGraph = async (title, labels, legend, data) => {
             }
         }
     })
-    .backgroundColor("#212946")
-    .width(1000).height(500)
+        .backgroundColor("#212946")
+        .width(1000).height(500)
 
     let random = Math.floor(Math.random() * 1000000);
-    
+
     await line_chart.toFile(`${random}.png`);
 
     return `${random}.png`
@@ -311,6 +311,6 @@ export const splitByRole = (games) => {
 
     return games.reduce((out, game) => {
         out[roles.indexOf(game.role)].push({id: game.id, date: game.date, before: game.previousElo, after: game.afterGameElo})
-        return out    
+        return out
     }, [[],[],[],[],[]])
 }

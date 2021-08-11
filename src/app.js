@@ -25,7 +25,7 @@ import {
     getMetaEmbed,
     insertGameStats,
     getPlayerStats,
-    getHallOfFameStats
+    getHallOfFameStats,
 } from "./interface/games.js"
 
 import {convertHelpToEmbed} from "./interface/help.js"
@@ -58,7 +58,6 @@ let champs = {}
 let userList = undefined;
 
 let champion;
-
 client.on("ready", async() => {
     console.log("Bot started, fetching guild members")
     userList = await fetchGuildMemberNicknames(client);
@@ -103,6 +102,24 @@ client.on("message", async (message) => {
                             message.channel.send("Shut up nerd, you're not an admin.")
                             return
                         }
+                    case "remove":
+                        if (admin) {
+                            if (args[1]) {
+                                let query = await removePlayersFromQueue([args[1].substring(3, args[1].length - 1)])
+
+                                if (query.n > 0) {
+                                    message.channel.send("Player removed from queue")
+                                } else {
+                                    message.channel.send("Player not in queue")
+                                }
+                            } else {
+                                message.channel.send("You messed something up you donkey!")
+                            }
+
+                        } else {
+                            message.channel.send("Shut up nerd, you're not an admin.")
+                        }
+                        return
                 }
 
                 user = await getUser(user_id);
@@ -227,9 +244,9 @@ client.on("message", async (message) => {
                             })
 
                             player_states[message.author.id].state = "accept"
-                            
+
                             winner = getPlayerSide(current_match, message.author.id, !["win", "won"].includes(cmd))
-                            
+
                             createEmbed(getMatchEndMessageEmbed(initiator, winner, player_states)).send(message.channel)
 
                         } else {
@@ -309,149 +326,145 @@ client.on("message", async (message) => {
                 }
                 break
             case 'rank':
-                {
-                    message.react('👑');
+            {
+                message.react('👑');
 
-                    let username
-                    let id
+                let username
+                let id
 
-                    if (args.length === 0) {
-                        id = message.author.id;
+                if (args.length === 0) {
+                    id = message.author.id;
+                    username = getMemberNickname(id, userList);
+                } else {
+                    id = args[0].slice(3, args[0].length - 1) //discord pings get passed as <@!id>
+
+                    try {
                         username = getMemberNickname(id, userList);
-                    } else {
-                        id = args[0].slice(3, args[0].length - 1) //discord pings get passed as <@!id>
-
-                        try {
-                            username = getMemberNickname(id, userList);
-                        } catch (e) {
-                            message.channel.send("You messed something up you donkey! Is this person even in this server?")
-                            return
-                        }                  
-                    }
-                    
-                    if (await getUser(id)) {
-                        message.channel.send(await getUserRankEmbed(id,username))
-                    } else {
-                        message.channel.send("Huh? You're trying to get a players rank before they've even used the bot? You might need some !help")
+                    } catch (e) {
+                        message.channel.send("You messed something up you donkey! Is this person even in this server?")
+                        return
                     }
                 }
-                break
-            case "notepic":
-            case "riot":
-                message.channel.send(":poop:")
+
+                if (await getUser(id)) {
+                    message.channel.send(await getUserRankEmbed(id,username))
+                } else {
+                    message.channel.send("Huh? You're trying to get a players rank before they've even used the bot? You might need some !help")
+                }
+            }
                 break
             case 'ranking':
-                {
-                    message.react('🏅');
+            {
+                message.react('🏅');
 
-                    if (args.length === 0) {
-                        createEmbed({
-                            title: `Ranking for all roles`,
-                            colour: '#ff77ff',
-                            description: 'Type !ranking [role] for a specific role',
-                            pages: await getAllRankingEmbed()
-                        }).send(message.channel, message.author.id)
-                    } else {
-                        if (args[0].toLowerCase() === 'average') {
-                            let e = await getAverageRankingData();
+                if (args.length === 0) {
+                    createEmbed({
+                        title: `Ranking for all roles`,
+                        colour: '#ff77ff',
+                        description: 'Type !ranking [role] for a specific role',
+                        pages: await getAllRankingEmbed()
+                    }).send(message.channel, message.author.id)
+                } else {
+                    if (args[0].toLowerCase() === 'average') {
+                        let e = await getAverageRankingData();
 
-                            embed = createEmbed(e);
+                        embed = createEmbed(e);
 
-                            if (embed){
-                                embed.send(message.channel, message.author.id)
-                                break
-                            } else {
-                                message.channel.send('No games have been played so far.')
-                                break
-                            }
+                        if (embed){
+                            embed.send(message.channel, message.author.id)
+                            break
                         } else {
-                            let role = formatRoles([args[0]])
+                            message.channel.send('No games have been played so far.')
+                            break
+                        }
+                    } else {
+                        let role = formatRoles([args[0]])
 
-                            if (role.length > 0) {
-                                createEmbed({
-                                    title: `Ranking for ${role[0]}`,
-                                    colour: '#aa77ff',
-                                    description: 'Type !ranking for a ranking of all roles',
-                                    pages: await getRoleRankEmbed(role[0])
-                                }).send(message.channel, message.author.id)
-                            } else {
-                                message.channel.send('You dont even kno how too spel roles corectely? Haha stoopid!')
-                            }
+                        if (role.length > 0) {
+                            createEmbed({
+                                title: `Ranking for ${role[0]}`,
+                                colour: '#aa77ff',
+                                description: 'Type !ranking for a ranking of all roles',
+                                pages: await getRoleRankEmbed(role[0])
+                            }).send(message.channel, message.author.id)
+                        } else {
+                            message.channel.send({files: ["https://cdn.discordapp.com/attachments/868935612709888042/868935649150005268/20181028_2027572.jpg"]})
                         }
                     }
                 }
+            }
                 break
             case 'champ':
             case 'champion':
                 message.react('🧙‍♀️');
-                {
-                    if (args.length === 0) {
-                        message.channel.send("You messed up the command, sunshine. !champion [champion]")
-                    } else {
-                        let user_id = message.author.id
+            {
+                if (args.length === 0) {
+                    message.channel.send("You messed up the command, sunshine. !champion [champion]")
+                } else {
+                    let user_id = message.author.id
 
-                        if (args.length > 1 && args[1] !== "all") {
-                            user_id = args[1].substring(3,args[1].length - 1)
-                        }
-
-                        if (args[1] !== "all") {
-                            let embed = await getPlayerChampionEmbed(user_id, args[0], userList)
-
-                            if (embed) {
-                                embed = createEmbed(embed)
-                                embed.send(message.channel, message.author.id)
-                            } else {
-                                message.channel.send("This player has not played this champion before")
-                            }
-                        } else {
-                            let embed = await getAllPlayerChampionEmbed(args[0])
-
-                            if (embed) {
-                                embed = createEmbed(embed)
-                                embed.send(message.channel, message.author.id)
-                            } else {
-                                message.channel.send("Could not recognise champion")
-                            }
-                        }
-
-                       
+                    if (args.length > 1 && args[1] !== "all") {
+                        user_id = args[1].substring(3,args[1].length - 1)
                     }
 
-                    
+                    if (args[1] !== "all") {
+                        let embed = await getPlayerChampionEmbed(user_id, args[0], userList)
+
+                        if (embed) {
+                            embed = createEmbed(embed)
+                            embed.send(message.channel, message.author.id)
+                        } else {
+                            message.channel.send("This player has not played this champion before")
+                        }
+                    } else {
+                        let embed = await getAllPlayerChampionEmbed(args[0])
+
+                        if (embed) {
+                            embed = createEmbed(embed)
+                            embed.send(message.channel, message.author.id)
+                        } else {
+                            message.channel.send("Could not recognise champion")
+                        }
+                    }
+
+
                 }
+
+
+            }
                 break
             case 'champs':
             case 'champions':
-                {
-                    message.react('🧙‍♂️');
+            {
+                message.react('🧙‍♂️');
 
-                    let user_id = message.author.id
+                let user_id = message.author.id
 
-                    if (args.length > 0) {
-                        if (args[0] !== "all") {
-                            user_id = args[0].substring(3, args[0].length - 1)
-                        }
-                        
-                    }
-
+                if (args.length > 0) {
                     if (args[0] !== "all") {
-                        let data = await getPlayerChampionsEmbed(user_id, userList)
-
-                        if (data != null) {
-                            let embed = createEmbed(data)
-        
-                            embed.send(message.channel, message.author.id)
-                        } else {
-                            message.channel.send("This user hasn't played any games")
-                        }                 
-                    } else {
-                        let data = await getAllChampionsEmbed()
-
-                        let embed = createEmbed(data)
-                        embed.send(message.channel, message.author.id)
+                        user_id = args[0].substring(3, args[0].length - 1)
                     }
-                   
+
                 }
+
+                if (args[0] !== "all") {
+                    let data = await getPlayerChampionsEmbed(user_id, userList)
+
+                    if (data != null) {
+                        let embed = createEmbed(data)
+
+                        embed.send(message.channel, message.author.id)
+                    } else {
+                        message.channel.send("This user hasn't played any games")
+                    }
+                } else {
+                    let data = await getAllChampionsEmbed()
+
+                    let embed = createEmbed(data)
+                    embed.send(message.channel, message.author.id)
+                }
+
+            }
                 break
             case 'champstats':
             case 'meta':
@@ -482,12 +495,6 @@ client.on("message", async (message) => {
 
                 if (embed){
                     embed.send(message.channel, message.author.id)
-                    /*
-                    embed.start({
-                        channel: message.channel,
-                        author: message.author
-                    })
-                    */
                     break
                 } else {
                     message.channel.send('No games have been played so far.')
@@ -643,37 +650,37 @@ client.on("message", async (message) => {
                 break
             case "opponents":
             case "nemesis":
-                {
-                    message.react('😈');
-                    if (args.length < 1) {
-                        user_id = message.author.id;
-                    } else {
-                        user_id = args[0].slice(3, args[0].length - 1);
-                    }
-                    nickname = getMemberNickname(user_id, userList);
-                    embedData = await getTeammateStats(user_id, true);
-                    pages = await convertOpponentDataToEmbed(embedData);
-                    createEmbed({
-                        title: `<:nat1:868637342909472789> Opponent stats for ${nickname} <:nat1:868637342909472789>`,
-                        description: 'See your hardest and easiest opponents!',
-                        colour: '#AFFDD7',
-                        pages: pages,
-                    }).send(message.channel, message.author.id)
+            {
+                message.react('😈');
+                if (args.length < 1) {
+                    user_id = message.author.id;
+                } else {
+                    user_id = args[0].slice(3, args[0].length - 1);
                 }
+                nickname = getMemberNickname(user_id, userList);
+                embedData = await getTeammateStats(user_id, true);
+                pages = await convertOpponentDataToEmbed(embedData);
+                createEmbed({
+                    title: `<:nat1:868637342909472789> Opponent stats for ${nickname} <:nat1:868637342909472789>`,
+                    description: 'See your hardest and easiest opponents!',
+                    colour: '#AFFDD7',
+                    pages: pages,
+                }).send(message.channel, message.author.id)
+            }
                 break
             case 'hof':
             case 'halloffame':
                 message.react('🎖️');
                 let stats;
                 if (args.length === 0){
-                    stats = await getHallOfFameStats(userList);
+                    stats = await getHallOfFameStats(userList, true);
                 } else {
                     champion = formatChampions([args[0]]);
                     if (champion.length === 0){
                         message.channel.send("My 8 year old son can spell champion names better than you. Yes, I adopted him.")
                         break
                     }
-                    stats = await getHallOfFameStats(userList, champion[0])
+                    stats = await getHallOfFameStats(userList, true, champion[0])
                 }
                 if (!stats) {
                     message.channel.send("No stats found for this champion.")
@@ -687,6 +694,7 @@ client.on("message", async (message) => {
                 break
             default:
                 message.channel.send('Ok, and what is that supposed to mean? Perhaps consider getting some !help.')
+                message.channel.send({files: ['https://cdn.discordapp.com/attachments/863014796915638296/869315149738172506/kiwihelp.jpg']});
         }
     }
 })
@@ -698,7 +706,7 @@ client.on("clickMenu", async (menu) => {
     } catch (error) {
         console.log(`Error interaction with menu`)
     }
-    
+
 })
 
 client.on("clickButton", async (button) => {
@@ -729,7 +737,7 @@ mongoose.connect(`${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin
 export const btnAcceptClick = async (embed, button) => {
     if (button.clicker.id in player_states) {
         player_states[button.clicker.id].state = "accept"
-        
+
         if (countReadyPlayers(player_states) >= 10 && match_playing === false) {
             deleteEmbed(embed)
 
@@ -739,7 +747,7 @@ export const btnAcceptClick = async (embed, button) => {
             match_playing = true
 
             let player_list = current_match.game.reduce((players, matchup) => {
-                return [...players, matchup.player1, matchup.player2]   
+                return [...players, matchup.player1, matchup.player2]
             }, [])
 
             await removePlayersFromQueue(player_list)
@@ -756,6 +764,14 @@ export const btnDeclineClick = (embed, button) => {
         if (countDeclinedPlayers(player_states) >= 3 && match_playing === false) {
             deleteEmbed(embed)
             button.channel.send('Match declined. :cry:');
+
+            current_match = null
+            match_message = null
+            player_states = {}
+            match_playing = false
+            initiator = null
+            winner = null
+            champs = {}
         } else {
             embed.init(getMatchMessageEmbed(current_match, player_states))
         }
@@ -774,7 +790,7 @@ export const btnAcceptWinClick = async (embed, button) => {
 
                 if (game != null) {
                     getGameEmbed(game).send(button.channel)
-                }           
+                }
             }
 
             current_match = null

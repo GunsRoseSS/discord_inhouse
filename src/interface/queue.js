@@ -22,6 +22,10 @@ export const addToQueue = async (id, roles) => {
 	await user.save()
 }
 
+export const getQueue = async () => {
+	return Queue.find();
+}
+
 export const clearQueue = async () => {
 	const status = await Queue.deleteMany()
 
@@ -29,7 +33,7 @@ export const clearQueue = async () => {
 }
 
 export const removePlayersFromQueue = async (players) => {
-	await Queue.deleteMany({$or: players.map(player => player = {_id: player})})
+	return Queue.deleteMany({$or: players.map(player => player = {_id: player})})
 }
 
 export const playersInQueue = async () => {

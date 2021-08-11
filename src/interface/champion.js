@@ -34,7 +34,7 @@ const getPlayerChampionData = async (id) => {
         let win = game.winner === player.team;
 
         let statsEntered = false;
-        if (game.bans.length > 0) {
+        if (game.statsFetched) {
             statsEntered = true;
         }
 
@@ -55,13 +55,23 @@ const getPlayerChampionData = async (id) => {
             champions[player.champion].gained += ordinal(player.afterGameElo) - ordinal(player.previousElo);
             if (statsEntered) {
                 for (let stat of statList) {
-                    champions[player.champion][`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
+                    if (stat === "cs") {
+                        champions[player.champion][`avg_${stat}`] += parseInt(player.stats[`${stat}`]) / game.duration;
+                    } else {
+                        champions[player.champion][`avg_${stat}`] += parseInt(player.stats[`${stat}`]);
+                    }
+
                     if (stat !== 'kills' && stat !== 'deaths' && stat !== 'assists') {
                         if (champions[player.champion][`best_${stat}`] < parseInt(player.stats[`${stat}`])) {
                             champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
                         }
                     }
                 }
+
+                if (champions[player.champion][`best_cpm`] < parseInt(player.stats[`cs`]) / game.duration) {
+                    champions[player.champion][`best_cpm`] = (parseInt(player.stats[`cs`]) / game.duration).toFixed(1);
+                }
+
                 if (champions[player.champion][`best_multi`] < parseInt(player.stats.multi)) {
                     champions[player.champion][`best_multi`] = parseInt(player.stats.multi);
                 }
@@ -93,8 +103,15 @@ const getPlayerChampionData = async (id) => {
             };
             if (statsEntered) {
                 for (let stat of statList) {
-                    champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
-                    champions[player.champion][`avg_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    if (stat === "cs") {
+                        champions[player.champion][`avg_${stat}`] = parseInt(player.stats[`${stat}`]) / game.duration
+                        champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`])
+                        champions[player.champion][`best_cpm`] = parseInt(player.stats[`${stat}`]) / game.duration
+                    } else {
+                        champions[player.champion][`best_${stat}`] = parseInt(player.stats[`${stat}`]);
+                        champions[player.champion][`avg_${stat}`] = parseInt(player.stats[`${stat}`]);
+                    }
+
                 }
                 champions[player.champion][`best_multi`] = player.stats.multi;
                 champions[player.champion].divideBy = 1;
@@ -102,6 +119,7 @@ const getPlayerChampionData = async (id) => {
                 champions[player.champion].best_kp = Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / totalKills * 1000) / 10;
                 champions[player.champion].avg_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
                 champions[player.champion].best_dmgshare = Math.round(player.stats.champ_dmg_total / totalDmg * 1000) / 10;
+
                 champions[player.champion].best_kda = {
                     calc: Math.round((parseInt(player.stats.kills) + parseInt(player.stats.assists)) / parseInt(player.stats.deaths) * 100) / 100,
                     kills: (parseInt(player.stats.kills)),
@@ -197,7 +215,7 @@ export const getAllPlayerChampionEmbed = async (champion) => {
 
     let pages = []
 
-    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
+    const PAGE_SIZE = 10
 
     let player_msg = ""
     let mmr_msg = ""
@@ -264,7 +282,7 @@ export const getAllChampionsEmbed = async () => {
 
     let pages = []
 
-    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
+    const PAGE_SIZE = 10
 
     let player_msg = ""
     let champ_msg = ""
@@ -311,14 +329,14 @@ export const getAllChampionsEmbed = async () => {
 }
 
 /**
- * 
+ *
  * @param {String} id Discord id of the user
  * @param {[String]} userList List of members in the guild, used to get their nickname
  */
 export const getPlayerChampionsEmbed = async (id, userList) => {
     let pages = []
 
-    const PAGE_SIZE = parseInt(process.env.EMBED_PAGE_LENGTH);
+    const PAGE_SIZE = 10
 
     let champ_msg = ""
     let mmr_msg = ""
@@ -427,8 +445,8 @@ export const getPlayerChampionEmbed = async (id, champion, userList) => {
                         inline: true
                     },
                     {
-                        name: "Average(Best) CS/Gold earned",
-                        value: `:crossed_swords: ${champs[champion].avg_cs}(${champs[champion].best_cs})/\n:coin: ${champs[champion].avg_gold}(${champs[champion].best_gold})`,
+                        name: "Average(Best) CS/m /Best total CS/Gold earned",
+                        value: `:crossed_swords: ${champs[champion].avg_cs}/(${parseInt(champs[champion].best_cpm).toFixed(1)}) \n :farmer: ${champs[champion].best_cs}\n:coin: ${champs[champion].avg_gold}(${champs[champion].best_gold})`,
                         inline: true
                     },
                     {
