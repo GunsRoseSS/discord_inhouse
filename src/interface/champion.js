@@ -133,14 +133,14 @@ const getPlayerChampionData = async (id) => {
     Object.values(champions).forEach(champ => {
         for (let stat of statList) {
             if (stat === 'kills' || stat === 'deaths' || stat === 'assists' || stat === 'cs' || stat === 'spree') {
-                champ[`avg_${stat}`] = Math.round(champ[`avg_${stat}`] * 10 / champ.divideBy) / 10; //provides one decimal, useful for lower number stats
+                champ[`avg_${stat}`] = parseFloat((champ[`avg_${stat}`] / champ.divideBy).toFixed(1)); //provides one decimal, useful for lower number stats
             } else {
-                champ[`avg_${stat}`] = Math.round(champ[`avg_${stat}`] / champ.divideBy);
+                champ[`avg_${stat}`] = (champ[`avg_${stat}`] / champ.divideBy);
             }
         }
-        champ.avg_kp = Math.round(champ.avg_kp / champ.divideBy * 10) / 10;
-        champ.avg_dmgshare = Math.round(champ.avg_dmgshare / champ.divideBy * 10) / 10;
-        champ.avg_kda = Math.round((champ.avg_kills + champ.avg_assists) / champ.avg_deaths * 100) / 100;
+        champ.avg_kp = (champ.avg_kp / champ.divideBy).toFixed(1);
+        champ.avg_dmgshare = (champ.avg_dmgshare / champ.divideBy).toFixed(1);
+        champ.avg_kda = ((champ.avg_kills + champ.avg_assists) / champ.avg_deaths).toFixed(2);
     })
 
     return champions
